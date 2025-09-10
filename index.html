@@ -788,13 +788,13 @@
 				position: absolute; /* Change from fixed to absolute so it scrolls */
 				width: 100px; /* Bigger logo */
 				height: 100px;
-				top: 6px; /* Move up */
+				top: 0; /* Align to very top */
 				left: 20px; /* Keep it on the left like desktop */
 			}
 			
 			.social-bar {
 				position: absolute; /* Change from fixed to absolute so it scrolls */
-				top: 6px; /* Align level with logo */
+				top: 0; /* Align level with logo */
 				right: 20px; /* Keep it on the right like desktop */
 				left: auto;
 				gap: 6px;
@@ -817,12 +817,12 @@
 				width: 80px; /* Bigger on mobile too */
 				height: 80px;
 				left: 15px;
-				top: 6px; /* Align level with social bar */
+				top: 0; /* Align to very top */
 			}
 			
 			.social-bar {
 				position: absolute; /* Change from fixed to absolute so it scrolls */
-				top: 6px; /* Align level with logo */
+				top: 0; /* Align level with logo */
 				right: 15px;
 			}
 			
@@ -1533,7 +1533,8 @@
 						<small>Edit global CSS theme variables</small>
 					</div>
 					<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
-						<div id="colorEffectCell" style="display:none;">
+						<div id="colorEffectCell" style="display:none;"></div>
+					</div>
 				</div>
 				<button class="close-btn" onclick="closeAdminPopup('adminPanelPopup')">&times;</button>
 			</div>
