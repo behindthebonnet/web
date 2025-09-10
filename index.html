@@ -33,9 +33,9 @@
 
 		*{box-sizing:border-box; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;}
 		html,body{height:100%}
-		html{padding:0; margin:0}
+		html{padding:0; margin:0; background:#1a1a2e; overflow-x:hidden}
 		body{
-			margin:0;
+			margin:0; padding:0;
 			font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,'Helvetica Neue',Arial,'Noto Sans',sans-serif;
 			color:var(--text);
 			background: #1a1a2e;
@@ -120,7 +120,7 @@
 		}
 		.page-logo{
 			position:fixed;
-			top:2px;
+			top:0;
 			left:60px;
 			width:135px;
 			height:135px;
@@ -788,13 +788,13 @@
 				position: absolute; /* Change from fixed to absolute so it scrolls */
 				width: 100px; /* Bigger logo */
 				height: 100px;
-				top: 10px;
+				top: 6px; /* Move up */
 				left: 20px; /* Keep it on the left like desktop */
 			}
 			
 			.social-bar {
 				position: absolute; /* Change from fixed to absolute so it scrolls */
-				top: 50px; /* Align with middle of logo (10px + 100px/2 - social bar height/2) */
+				top: 6px; /* Align level with logo */
 				right: 20px; /* Keep it on the right like desktop */
 				left: auto;
 				gap: 6px;
@@ -817,11 +817,12 @@
 				width: 80px; /* Bigger on mobile too */
 				height: 80px;
 				left: 15px;
+				top: 6px; /* Align level with social bar */
 			}
 			
 			.social-bar {
 				position: absolute; /* Change from fixed to absolute so it scrolls */
-				top: 40px; /* Align with middle of smaller logo */
+				top: 6px; /* Align level with logo */
 				right: 15px;
 			}
 			
@@ -1527,7 +1528,12 @@
 				<h3>Admin Panel</h3>
 				<div class="admin-user-info">
 					<span id="adminUserName">Welcome, Admin</span>
-					<button class="admin-logout-btn" onclick="signOut()">Logout</button>
+					<div style="margin-bottom:10px; display:flex; gap:10px; align-items:center;">
+						<button onclick="openColorsPopup()" style="background: linear-gradient(90deg, #6a11cb, #2575fc);">Edit Colors</button>
+						<small>Edit global CSS theme variables</small>
+					</div>
+					<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+						<div id="colorEffectCell" style="display:none;">
 				</div>
 				<button class="close-btn" onclick="closeAdminPopup('adminPanelPopup')">&times;</button>
 			</div>
@@ -1537,7 +1543,7 @@
 					<div class="admin-setting">
 						<label for="profilePicture">Profile Picture URL:</label>
 						<input type="url" id="profilePicture" placeholder="https://example.com/image.jpg">
-						<button onclick="updateProfilePicture()">Update</button>
+						</div>
 					</div>
 				</div>
 				
@@ -1556,6 +1562,25 @@
 						<small>This is your handle/username (include @ if desired)</small>
 					</div>
 				</div>
+
+	<!-- Colors Editor Popup -->
+	<div id="colorsPopup" class="popup-overlay">
+		<div class="popup-content">
+			<div class="popup-header">
+				<h3>Edit Site Colors</h3>
+				<button class="close-btn" onclick="closePopup('colorsPopup')">&times;</button>
+			</div>
+			<div class="popup-body">
+				<div class="admin-setting">
+					<div id="colorsList" style="display:grid; gap:10px;"></div>
+					<div style="display:flex; gap:10px; margin-top:12px;">
+						<button onclick="saveColorsToDb()" style="background: linear-gradient(90deg, #00d2d3, #54a0ff);">Save Colors Globally</button>
+						<button onclick="resetColorsToDefaults()" style="background: linear-gradient(90deg, #ff6b6b, #ee5a24);">Reset Colors</button>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
 				
 				<div class="admin-section">
 					<h4>Twitch Status</h4>
@@ -1958,6 +1983,81 @@
 		function closePopup(popupId) {
 			document.getElementById(popupId).style.display = 'none';
 			document.body.style.overflow = 'auto';
+		}
+
+		// Colors Editor
+		const COLOR_VARS = [
+			{ key: '--bg-1', type: 'hex' },
+			{ key: '--bg-2', type: 'hex' },
+			{ key: '--twitch', type: 'hex' },
+			{ key: '--twitch-2', type: 'hex' },
+			{ key: '--pink', type: 'hex' },
+			{ key: '--cyan', type: 'hex' },
+			{ key: '--glow', type: 'hex' },
+			{ key: '--text', type: 'hex' },
+			{ key: '--muted', type: 'hex' },
+			{ key: '--card', type: 'hex' },
+			{ key: '--glass', type: 'rgba' },
+			{ key: '--border', type: 'rgba' }
+		];
+
+		function getCssVar(key) {
+			return getComputedStyle(document.documentElement).getPropertyValue(key).trim();
+		}
+		function setCssVar(key, value) {
+			document.documentElement.style.setProperty(key, value);
+		}
+		function openColorsPopup() {
+			const list = document.getElementById('colorsList');
+			if (!list) return;
+			list.innerHTML = '';
+			COLOR_VARS.forEach(v => {
+				const row = document.createElement('div');
+				row.style.display = 'grid';
+				row.style.gridTemplateColumns = '160px 1fr 90px';
+				row.style.gap = '10px';
+				const label = document.createElement('label');
+				label.textContent = v.key;
+				label.style.color = 'var(--muted)';
+				const input = document.createElement('input');
+				input.type = 'text';
+				input.value = getCssVar(v.key);
+				input.style.background = 'rgba(255,255,255,0.05)';
+				input.style.border = '1px solid var(--border)';
+				input.style.color = 'var(--text)';
+				input.style.borderRadius = '8px';
+				input.oninput = (e) => {
+					setCssVar(v.key, e.target.value);
+				};
+				const preview = document.createElement('div');
+				preview.style.height = '34px';
+				preview.style.border = '1px solid var(--border)';
+				preview.style.borderRadius = '6px';
+				preview.style.background = getCssVar(v.key);
+				const syncPreview = () => { preview.style.background = input.value; };
+				input.addEventListener('input', syncPreview);
+				row.appendChild(label); row.appendChild(input); row.appendChild(preview);
+				list.appendChild(row);
+			});
+			openPopup('colorsPopup');
+		}
+
+		async function saveColorsToDb() {
+			const payload = {};
+			COLOR_VARS.forEach(v => { payload[v.key] = getCssVar(v.key); });
+			await saveGlobalSetting('siteColors', JSON.stringify(payload));
+			alert('Colors saved GLOBALLY!');
+		}
+
+		async function resetColorsToDefaults() {
+			if (!confirm('Reset colors to defaults?')) return;
+			// defaults align with current CSS at top
+			const defaults = {
+				'--bg-1':'#0b0b12','--bg-2':'#0e0b1a','--twitch':'#3a3a3a','--twitch-2':'#777777','--pink':'#666666','--cyan':'#888888','--glow':'#9a9a9a',
+				'--text':'#e8e8f0','--muted':'#b8b8c7','--card':'#121226cc','--glass':'rgba(18,18,38,0.55)','--border':'rgba(255,255,255,0.08)'
+			};
+			Object.entries(defaults).forEach(([k,v])=>setCssVar(k,v));
+			await saveGlobalSetting('siteColors', JSON.stringify(defaults));
 		}
 
 		// Close popup when clicking outside
@@ -2982,15 +3082,29 @@
 						updateTintRows();
 						if (tint.mode === 'solid') {
 							document.getElementById('tintColor1').value = tint.color1 || '#9146ff';
-							document.getElementById('tintOpacity').value = Math.round((tint.opacity ?? 0.35) * 100);
+								const op1 = (typeof tint.opacity === 'number' && tint.opacity > 1) ? tint.opacity : Math.round((tint.opacity ?? 0.35) * 100);
+								document.getElementById('tintOpacity').value = op1;
 						} else if (tint.mode === 'gradient') {
 							document.getElementById('tintColorG1').value = tint.color1 || '#9146ff';
 							document.getElementById('tintColorG2').value = tint.color2 || '#3a86ff';
 							document.getElementById('tintDirection').value = tint.direction || 'to bottom';
-							document.getElementById('tintOpacityG').value = Math.round((tint.opacity ?? 0.35) * 100);
+							const op2 = (typeof tint.opacity === 'number' && tint.opacity > 1) ? tint.opacity : Math.round((tint.opacity ?? 0.35) * 100);
+							document.getElementById('tintOpacityG').value = op2;
 						}
 					}
 				} catch(e) { console.warn('Failed to parse themeTint:', e); }
+			}
+
+			// Load site colors (CSS variables)
+			const savedColors = await loadGlobalSetting('siteColors');
+			if (savedColors && savedColors !== 'N/A') {
+				try {
+					const colors = JSON.parse(savedColors);
+					Object.entries(colors).forEach(([k,v])=>{
+						document.documentElement.style.setProperty(k, v);
+					});
+					console.log('🎨 Applied site colors from DB');
+				} catch(e) { console.warn('Failed to parse siteColors:', e); }
 			}
 
 			// Load and apply global website effects
@@ -3912,13 +4026,15 @@
 			const mode = document.getElementById('tintMode')?.value || 'none';
 			const payload = { mode };
 			if (mode==='solid') {
-				payload.color1 = document.getElementById('tintColor1').value;
-				payload.opacity = Number(document.getElementById('tintOpacity').value)/100;
+					payload.color1 = document.getElementById('tintColor1').value;
+					const raw = Number(document.getElementById('tintOpacity').value);
+					payload.opacity = raw > 1 ? raw/100 : raw;
 			} else if (mode==='gradient') {
 				payload.color1 = document.getElementById('tintColorG1').value;
 				payload.color2 = document.getElementById('tintColorG2').value;
 				payload.direction = document.getElementById('tintDirection').value;
-				payload.opacity = Number(document.getElementById('tintOpacityG').value)/100;
+					const raw = Number(document.getElementById('tintOpacityG').value);
+					payload.opacity = raw > 1 ? raw/100 : raw;
 			}
 			await saveGlobalSetting('themeTint', JSON.stringify(payload));
 			applyThemeTint(payload);
@@ -3934,6 +4050,7 @@
 				document.body.classList.remove('effect-color');
 			}
 			updateCombinedFilters();
+			scheduleEffectsAutoSave();
 		}
 
 		function toggleGrayscale() {
@@ -3944,6 +4061,7 @@
 				document.body.classList.remove('effect-grayscale');
 			}
 			updateCombinedFilters();
+			scheduleEffectsAutoSave();
 		}
 
 		function toggleBlur() {
@@ -3954,6 +4072,7 @@
 				if (isChecked) glass.classList.remove('hidden');
 				else glass.classList.add('hidden');
 			}
+			scheduleEffectsAutoSave();
 		}
 
 		function toggleSepia() {
@@ -3964,6 +4083,7 @@
 				document.body.classList.remove('effect-sepia');
 			}
 			updateCombinedFilters();
+			scheduleEffectsAutoSave();
 		}
 
 		function toggleInvert() {
@@ -3974,6 +4094,7 @@
 				document.body.classList.remove('effect-invert');
 			}
 			updateCombinedFilters();
+			scheduleEffectsAutoSave();
 		}
 
 		function toggleBrightness() {
@@ -3984,6 +4105,7 @@
 				document.body.classList.remove('effect-brightness');
 			}
 			updateCombinedFilters();
+			scheduleEffectsAutoSave();
 		}
 
 		function updateCombinedFilters() {
@@ -4027,7 +4149,17 @@
 			if (input) input.value = h;
 			if (document.body.classList.contains('effect-color')) {
 				updateCombinedFilters();
+				scheduleEffectsAutoSave();
 			}
+		}
+
+		let effectsSaveTimer = null;
+		function scheduleEffectsAutoSave() {
+			if (effectsSaveTimer) clearTimeout(effectsSaveTimer);
+			effectsSaveTimer = setTimeout(() => {
+				// Reuse saveEffectsGlobally payload builder
+				saveEffectsGlobally();
+			}, 400);
 		}
 
 		function updateColorHue(val) {
