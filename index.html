@@ -1455,6 +1455,7 @@
 		document.addEventListener('click', function(event) {
 			var followPopup = document.getElementById('followPopup');
 			var subscribePopup = document.getElementById('subscribePopup');
+			var colorsPopup = document.getElementById('colorsPopup');
 			
 			if (event.target === followPopup) {
 				closePopup('followPopup');
@@ -1462,13 +1463,17 @@
 			if (event.target === subscribePopup) {
 				closePopup('subscribePopup');
 			}
+			if (event.target === colorsPopup) {
+				closePopup('colorsPopup');
+			}
 		});
 
 		// Close popup with Escape key
-		document.addEventListener('keydown', function(event) {
+			document.addEventListener('keydown', function(event) {
 			if (event.key === 'Escape') {
 				closePopup('followPopup');
 				closePopup('subscribePopup');
+					closePopup('colorsPopup');
 			}
 		});
 	</script>
@@ -1497,6 +1502,25 @@
 			<div class="popup-body">
 				<p>Choose where you'd like to subscribe:</p>
 				<div class="popup-buttons" id="subscribePopupButtons"></div>
+			</div>
+		</div>
+	</div>
+
+	<!-- Colors Editor Popup -->
+	<div id="colorsPopup" class="popup-overlay">
+		<div class="popup-content">
+			<div class="popup-header">
+				<h3>Edit Site Colors</h3>
+				<button class="close-btn" onclick="closePopup('colorsPopup')">&times;</button>
+			</div>
+			<div class="popup-body">
+				<div class="admin-setting">
+					<div id="colorsList" style="display:grid; gap:10px;"></div>
+					<div style="display:flex; gap:10px; margin-top:12px;">
+						<button onclick="saveColorsToDb()" style="background: linear-gradient(90deg, #00d2d3, #54a0ff);">Save Colors Globally</button>
+						<button onclick="resetColorsToDefaults()" style="background: linear-gradient(90deg, #ff6b6b, #ee5a24);">Reset Colors</button>
+					</div>
+				</div>
 			</div>
 		</div>
 	</div>
@@ -1544,7 +1568,6 @@
 					<div class="admin-setting">
 						<label for="profilePicture">Profile Picture URL:</label>
 						<input type="url" id="profilePicture" placeholder="https://example.com/image.jpg">
-						</div>
 					</div>
 				</div>
 				
@@ -1564,24 +1587,7 @@
 					</div>
 				</div>
 
-	<!-- Colors Editor Popup -->
-	<div id="colorsPopup" class="popup-overlay">
-		<div class="popup-content">
-			<div class="popup-header">
-				<h3>Edit Site Colors</h3>
-				<button class="close-btn" onclick="closePopup('colorsPopup')">&times;</button>
-			</div>
-			<div class="popup-body">
-				<div class="admin-setting">
-					<div id="colorsList" style="display:grid; gap:10px;"></div>
-					<div style="display:flex; gap:10px; margin-top:12px;">
-						<button onclick="saveColorsToDb()" style="background: linear-gradient(90deg, #00d2d3, #54a0ff);">Save Colors Globally</button>
-						<button onclick="resetColorsToDefaults()" style="background: linear-gradient(90deg, #ff6b6b, #ee5a24);">Reset Colors</button>
-					</div>
-				</div>
-			</div>
-		</div>
-	</div>
+
 				
 				<div class="admin-section">
 					<h4>Twitch Status</h4>
