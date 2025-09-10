@@ -1677,30 +1677,48 @@
 				<div class="admin-section">
 					<h4>Schedule Settings</h4>
 					<div class="admin-setting">
-						<label for="saturdayTime">Saturday Stream Time & Date:</label>
+						<label for="streamDay1">First Stream Day:</label>
 						<div style="display: flex; gap: 10px; align-items: center;">
-							<input type="text" id="saturdayTime" placeholder="5:00PM" style="flex: 1;">
-							<select id="saturdayDate" style="flex: 1;">
-								<option value="auto">Auto (Next Saturday)</option>
+							<select id="streamDay1" style="flex: 1;">
+								<option value="0">Sunday</option>
+								<option value="1">Monday</option>
+								<option value="2">Tuesday</option>
+								<option value="3">Wednesday</option>
+								<option value="4">Thursday</option>
+								<option value="5">Friday</option>
+								<option value="6" selected>Saturday</option>
+							</select>
+							<input type="text" id="streamTime1" placeholder="5:00PM" style="flex: 1;">
+							<select id="streamDateMode1" style="flex: 1;">
+								<option value="auto">Auto (Next Week)</option>
 								<option value="custom">Custom Date</option>
 							</select>
-							<input type="date" id="saturdayCustomDate" style="flex: 1; display: none;">
+							<input type="date" id="streamCustomDate1" style="flex: 1; display: none;">
 						</div>
-						<button onclick="updateSaturdayTime()">Update</button>
-						<small>Time: e.g., 5:00PM, 17:00, etc. | Date: Auto calculates next Saturday or choose custom date</small>
+						<button onclick="updateStreamSchedule(1)">Update</button>
+						<small>Choose day of week, time (e.g., 5:00PM), and date mode</small>
 					</div>
 					<div class="admin-setting">
-						<label for="sundayTime">Sunday Stream Time & Date:</label>
+						<label for="streamDay2">Second Stream Day:</label>
 						<div style="display: flex; gap: 10px; align-items: center;">
-							<input type="text" id="sundayTime" placeholder="6:00PM" style="flex: 1;">
-							<select id="sundayDate" style="flex: 1;">
-								<option value="auto">Auto (Next Sunday)</option>
+							<select id="streamDay2" style="flex: 1;">
+								<option value="0" selected>Sunday</option>
+								<option value="1">Monday</option>
+								<option value="2">Tuesday</option>
+								<option value="3">Wednesday</option>
+								<option value="4">Thursday</option>
+								<option value="5">Friday</option>
+								<option value="6">Saturday</option>
+							</select>
+							<input type="text" id="streamTime2" placeholder="6:00PM" style="flex: 1;">
+							<select id="streamDateMode2" style="flex: 1;">
+								<option value="auto">Auto (Next Week)</option>
 								<option value="custom">Custom Date</option>
 							</select>
-							<input type="date" id="sundayCustomDate" style="flex: 1; display: none;">
+							<input type="date" id="streamCustomDate2" style="flex: 1; display: none;">
 						</div>
-						<button onclick="updateSundayTime()">Update</button>
-						<small>Time: e.g., 6:00PM, 18:00, etc. | Date: Auto calculates next Sunday or choose custom date</small>
+						<button onclick="updateStreamSchedule(2)">Update</button>
+						<small>Choose day of week, time (e.g., 6:00PM), and date mode</small>
 					</div>
 				</div>
 				
@@ -2524,43 +2542,46 @@
 				}
 			}
 			
-			// Apply saved schedule times with date logic
-			if (savedSaturdayTime && savedSaturdayTime !== 'N/A') {
+			// Apply saved schedule with new flexible format (with fallback to old format)
+			const stream1Day = await loadGlobalSetting('stream1Day') || 6; // Default Saturday
+			const stream1Time = await loadGlobalSetting('stream1Time') || savedSaturdayTime;
+			const stream1DateMode = await loadGlobalSetting('stream1DateMode') || 'auto';
+			const stream1CustomDate = await loadGlobalSetting('stream1CustomDate') || '';
+			
+			const stream2Day = await loadGlobalSetting('stream2Day') || 0; // Default Sunday
+			const stream2Time = await loadGlobalSetting('stream2Time') || savedSundayTime;
+			const stream2DateMode = await loadGlobalSetting('stream2DateMode') || 'auto';
+			const stream2CustomDate = await loadGlobalSetting('stream2CustomDate') || '';
+			
+			if (stream1Time && stream1Time !== 'N/A') {
 				const saturdayElement = document.getElementById('saturdaySchedule');
 				if (saturdayElement) {
-					// Load date settings
-					const saturdayDateMode = await loadGlobalSetting('saturdayDateMode') || 'auto';
-					const saturdayCustomDate = await loadGlobalSetting('saturdayCustomDate') || '';
-					
 					let displayDate;
-					if (saturdayDateMode === 'custom' && saturdayCustomDate) {
-						const customDateObj = new Date(saturdayCustomDate);
+					if (stream1DateMode === 'custom' && stream1CustomDate) {
+						const customDateObj = new Date(stream1CustomDate);
 						displayDate = formatScheduleDate(customDateObj);
 					} else {
-						// Auto mode - next Saturday
-						const nextSaturday = getNextWeekdayDate(6); // 6 = Saturday
-						displayDate = formatScheduleDate(nextSaturday);
+						// Auto mode - next occurrence of selected day
+						const nextDate = getNextWeekdayDate(parseInt(stream1Day));
+						displayDate = formatScheduleDate(nextDate);
 					}
-					saturdayElement.textContent = `${displayDate}, ${savedSaturdayTime}`;
+					saturdayElement.textContent = `${displayDate}, ${stream1Time}`;
 				}
 			}
-			if (savedSundayTime && savedSundayTime !== 'N/A') {
+			
+			if (stream2Time && stream2Time !== 'N/A') {
 				const sundayElement = document.getElementById('sundaySchedule');
 				if (sundayElement) {
-					// Load date settings
-					const sundayDateMode = await loadGlobalSetting('sundayDateMode') || 'auto';
-					const sundayCustomDate = await loadGlobalSetting('sundayCustomDate') || '';
-					
 					let displayDate;
-					if (sundayDateMode === 'custom' && sundayCustomDate) {
-						const customDateObj = new Date(sundayCustomDate);
+					if (stream2DateMode === 'custom' && stream2CustomDate) {
+						const customDateObj = new Date(stream2CustomDate);
 						displayDate = formatScheduleDate(customDateObj);
 					} else {
-						// Auto mode - next Sunday
-						const nextSunday = getNextWeekdayDate(0); // 0 = Sunday
-						displayDate = formatScheduleDate(nextSunday);
+						// Auto mode - next occurrence of selected day
+						const nextDate = getNextWeekdayDate(parseInt(stream2Day));
+						displayDate = formatScheduleDate(nextDate);
 					}
-					sundayElement.textContent = `${displayDate}, ${savedSundayTime}`;
+					sundayElement.textContent = `${displayDate}, ${stream2Time}`;
 				}
 			}
 			
@@ -2717,12 +2738,17 @@
 			const currentRedditLink = await loadGlobalSetting('redditLink') || '';
 			const currentFollowButtonText = await loadGlobalSetting('followButtonText') || '';
 			const currentSubscribeButtonText = await loadGlobalSetting('subscribeButtonText') || '';
-			const currentSaturdayTime = await loadGlobalSetting('saturdayTime') || '';
-			const currentSundayTime = await loadGlobalSetting('sundayTime') || '';
-			const currentSaturdayDateMode = await loadGlobalSetting('saturdayDateMode') || 'auto';
-			const currentSundayDateMode = await loadGlobalSetting('sundayDateMode') || 'auto';
-			const currentSaturdayCustomDate = await loadGlobalSetting('saturdayCustomDate') || '';
-			const currentSundayCustomDate = await loadGlobalSetting('sundayCustomDate') || '';
+			
+			// Load new schedule format (with fallback to old format)
+			const stream1Day = await loadGlobalSetting('stream1Day') || 6; // Default Saturday
+			const stream1Time = await loadGlobalSetting('stream1Time') || await loadGlobalSetting('saturdayTime') || '';
+			const stream1DateMode = await loadGlobalSetting('stream1DateMode') || 'auto';
+			const stream1CustomDate = await loadGlobalSetting('stream1CustomDate') || '';
+			
+			const stream2Day = await loadGlobalSetting('stream2Day') || 0; // Default Sunday  
+			const stream2Time = await loadGlobalSetting('stream2Time') || await loadGlobalSetting('sundayTime') || '';
+			const stream2DateMode = await loadGlobalSetting('stream2DateMode') || 'auto';
+			const stream2CustomDate = await loadGlobalSetting('stream2CustomDate') || '';
 			
 			// Display current settings
 			document.getElementById('currentDisplayName').textContent = currentDisplayName === 'N/A' ? 'N/A' : currentDisplayName;
@@ -2747,28 +2773,35 @@
 			document.getElementById('currentRedditLink').textContent = currentRedditLink ? (currentRedditLink.length > 30 ? currentRedditLink.substring(0, 30) + '...' : currentRedditLink) : 'N/A';
 			document.getElementById('currentFollowButtonText').textContent = currentFollowButtonText || 'Follow';
 			document.getElementById('currentSubscribeButtonText').textContent = currentSubscribeButtonText || 'Subscribe';
-			document.getElementById('currentSaturdayTime').textContent = currentSaturdayTime || 'N/A';
-			document.getElementById('currentSundayTime').textContent = currentSundayTime || 'N/A';
 			
-			// Set date selector values
-			const saturdayDateSelect = document.getElementById('saturdayDate');
-			const sundayDateSelect = document.getElementById('sundayDate');
-			const saturdayCustomDate = document.getElementById('saturdayCustomDate');
-			const sundayCustomDate = document.getElementById('sundayCustomDate');
+			// Set schedule selector values
+			const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 			
-			if (saturdayDateSelect) {
-				saturdayDateSelect.value = currentSaturdayDateMode;
-				if (currentSaturdayDateMode === 'custom') {
-					saturdayCustomDate.style.display = 'block';
-					saturdayCustomDate.value = currentSaturdayCustomDate;
+			const streamDay1Select = document.getElementById('streamDay1');
+			const streamTime1Input = document.getElementById('streamTime1');
+			const streamDateMode1Select = document.getElementById('streamDateMode1');
+			const streamCustomDate1Input = document.getElementById('streamCustomDate1');
+			
+			const streamDay2Select = document.getElementById('streamDay2');
+			const streamTime2Input = document.getElementById('streamTime2');
+			const streamDateMode2Select = document.getElementById('streamDateMode2');
+			const streamCustomDate2Input = document.getElementById('streamCustomDate2');
+			
+			if (streamDay1Select) {
+				streamDay1Select.value = stream1Day;
+				streamDateMode1Select.value = stream1DateMode;
+				if (stream1DateMode === 'custom') {
+					streamCustomDate1Input.style.display = 'block';
+					streamCustomDate1Input.value = stream1CustomDate;
 				}
 			}
 			
-			if (sundayDateSelect) {
-				sundayDateSelect.value = currentSundayDateMode;
-				if (currentSundayDateMode === 'custom') {
-					sundayCustomDate.style.display = 'block';
-					sundayCustomDate.value = currentSundayCustomDate;
+			if (streamDay2Select) {
+				streamDay2Select.value = stream2Day;
+				streamDateMode2Select.value = stream2DateMode;
+				if (stream2DateMode === 'custom') {
+					streamCustomDate2Input.style.display = 'block';
+					streamCustomDate2Input.value = stream2CustomDate;
 				}
 			}
 			
@@ -3260,76 +3293,104 @@
 			alert('Subscribe button updated GLOBALLY!');
 		}
 
-		async function updateSaturdayTime() {
-			const time = document.getElementById('saturdayTime').value.trim();
-			const dateMode = document.getElementById('saturdayDate').value;
-			const customDate = document.getElementById('saturdayCustomDate').value;
+		async function updateStreamSchedule(streamNumber) {
+			const daySelect = document.getElementById(`streamDay${streamNumber}`);
+			const timeInput = document.getElementById(`streamTime${streamNumber}`);
+			const dateModeSelect = document.getElementById(`streamDateMode${streamNumber}`);
+			const customDateInput = document.getElementById(`streamCustomDate${streamNumber}`);
+			
+			const selectedDay = parseInt(daySelect.value);
+			const time = timeInput.value.trim();
+			const dateMode = dateModeSelect.value;
+			const customDate = customDateInput.value;
 			
 			if (!time) {
-				alert('Please enter Saturday stream time');
+				alert(`Please enter stream ${streamNumber} time`);
 				return;
 			}
 
-			// Save time and date settings
-			await saveGlobalSetting('saturdayTime', time);
-			await saveGlobalSetting('saturdayDateMode', dateMode);
+			// Save settings
+			await saveGlobalSetting(`stream${streamNumber}Day`, selectedDay);
+			await saveGlobalSetting(`stream${streamNumber}Time`, time);
+			await saveGlobalSetting(`stream${streamNumber}DateMode`, dateMode);
 			if (dateMode === 'custom' && customDate) {
-				await saveGlobalSetting('saturdayCustomDate', customDate);
+				await saveGlobalSetting(`stream${streamNumber}CustomDate`, customDate);
 			}
 			
-			// Update display with proper date calculation
-			const saturdayElement = document.getElementById('saturdaySchedule');
-			if (saturdayElement) {
+			// Update display
+			const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+			const scheduleElement = document.getElementById(streamNumber === 1 ? 'saturdaySchedule' : 'sundaySchedule');
+			
+			if (scheduleElement) {
 				let displayDate;
 				if (dateMode === 'custom' && customDate) {
 					const customDateObj = new Date(customDate);
 					displayDate = formatScheduleDate(customDateObj);
 				} else {
-					// Auto mode - next Saturday
-					const nextSaturday = getNextWeekdayDate(6); // 6 = Saturday
-					displayDate = formatScheduleDate(nextSaturday);
+					// Auto mode - next occurrence of selected day
+					const nextDate = getNextWeekdayDate(selectedDay);
+					displayDate = formatScheduleDate(nextDate);
 				}
-				saturdayElement.textContent = `${displayDate}, ${time}`;
+				scheduleElement.textContent = `${displayDate}, ${time}`;
 			}
 			
-			document.getElementById('saturdayTime').value = '';
-			alert('Saturday schedule updated GLOBALLY!');
+			timeInput.value = '';
+			alert(`Stream ${streamNumber} schedule updated GLOBALLY!`);
+		}
+
+		// Keep old functions for backward compatibility but make them call the new function
+		async function updateSaturdayTime() {
+			// Try new format first, fallback to old
+			const newTimeInput = document.getElementById('streamTime1');
+			const oldTimeInput = document.getElementById('saturdayTime');
+			
+			if (newTimeInput && newTimeInput.value.trim()) {
+				await updateStreamSchedule(1);
+			} else if (oldTimeInput && oldTimeInput.value.trim()) {
+				// Old format compatibility
+				const time = oldTimeInput.value.trim();
+				await saveGlobalSetting('stream1Day', 6); // Saturday
+				await saveGlobalSetting('stream1Time', time);
+				await saveGlobalSetting('stream1DateMode', 'auto');
+				
+				const saturdayElement = document.getElementById('saturdaySchedule');
+				if (saturdayElement) {
+					const nextSaturday = getNextWeekdayDate(6);
+					const displayDate = formatScheduleDate(nextSaturday);
+					saturdayElement.textContent = `${displayDate}, ${time}`;
+				}
+				oldTimeInput.value = '';
+				alert('Saturday schedule updated GLOBALLY!');
+			} else {
+				alert('Please enter Saturday stream time');
+			}
 		}
 
 		async function updateSundayTime() {
-			const time = document.getElementById('sundayTime').value.trim();
-			const dateMode = document.getElementById('sundayDate').value;
-			const customDate = document.getElementById('sundayCustomDate').value;
+			// Try new format first, fallback to old
+			const newTimeInput = document.getElementById('streamTime2');
+			const oldTimeInput = document.getElementById('sundayTime');
 			
-			if (!time) {
-				alert('Please enter Sunday stream time');
-				return;
-			}
-
-			// Save time and date settings
-			await saveGlobalSetting('sundayTime', time);
-			await saveGlobalSetting('sundayDateMode', dateMode);
-			if (dateMode === 'custom' && customDate) {
-				await saveGlobalSetting('sundayCustomDate', customDate);
-			}
-			
-			// Update display with proper date calculation
-			const sundayElement = document.getElementById('sundaySchedule');
-			if (sundayElement) {
-				let displayDate;
-				if (dateMode === 'custom' && customDate) {
-					const customDateObj = new Date(customDate);
-					displayDate = formatScheduleDate(customDateObj);
-				} else {
-					// Auto mode - next Sunday
-					const nextSunday = getNextWeekdayDate(0); // 0 = Sunday
-					displayDate = formatScheduleDate(nextSunday);
+			if (newTimeInput && newTimeInput.value.trim()) {
+				await updateStreamSchedule(2);
+			} else if (oldTimeInput && oldTimeInput.value.trim()) {
+				// Old format compatibility
+				const time = oldTimeInput.value.trim();
+				await saveGlobalSetting('stream2Day', 0); // Sunday
+				await saveGlobalSetting('stream2Time', time);
+				await saveGlobalSetting('stream2DateMode', 'auto');
+				
+				const sundayElement = document.getElementById('sundaySchedule');
+				if (sundayElement) {
+					const nextSunday = getNextWeekdayDate(0);
+					const displayDate = formatScheduleDate(nextSunday);
+					sundayElement.textContent = `${displayDate}, ${time}`;
 				}
-				sundayElement.textContent = `${displayDate}, ${time}`;
+				oldTimeInput.value = '';
+				alert('Sunday schedule updated GLOBALLY!');
+			} else {
+				alert('Please enter Sunday stream time');
 			}
-			
-			document.getElementById('sundayTime').value = '';
-			alert('Sunday schedule updated GLOBALLY!');
 		}
 
 		async function updateYouTubeVideo() {
@@ -3652,27 +3713,27 @@
 		
 		// Date selector handlers for schedule settings
 		function setupDateSelectors() {
-			const saturdayDateSelect = document.getElementById('saturdayDate');
-			const saturdayCustomDate = document.getElementById('saturdayCustomDate');
-			const sundayDateSelect = document.getElementById('sundayDate');
-			const sundayCustomDate = document.getElementById('sundayCustomDate');
+			const streamDateMode1 = document.getElementById('streamDateMode1');
+			const streamCustomDate1 = document.getElementById('streamCustomDate1');
+			const streamDateMode2 = document.getElementById('streamDateMode2');
+			const streamCustomDate2 = document.getElementById('streamCustomDate2');
 			
-			if (saturdayDateSelect) {
-				saturdayDateSelect.addEventListener('change', function() {
+			if (streamDateMode1) {
+				streamDateMode1.addEventListener('change', function() {
 					if (this.value === 'custom') {
-						saturdayCustomDate.style.display = 'block';
+						streamCustomDate1.style.display = 'block';
 					} else {
-						saturdayCustomDate.style.display = 'none';
+						streamCustomDate1.style.display = 'none';
 					}
 				});
 			}
 			
-			if (sundayDateSelect) {
-				sundayDateSelect.addEventListener('change', function() {
+			if (streamDateMode2) {
+				streamDateMode2.addEventListener('change', function() {
 					if (this.value === 'custom') {
-						sundayCustomDate.style.display = 'block';
+						streamCustomDate2.style.display = 'block';
 					} else {
-						sundayCustomDate.style.display = 'none';
+						streamCustomDate2.style.display = 'none';
 					}
 				});
 			}
