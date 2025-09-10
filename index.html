@@ -1,11 +1,167 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Test Page</title>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>ilyambr</title>
+	<link rel="icon" type="image/x-icon" href="./favicon.ico">
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Space+Grotesk:wght@400;600&display=swap" rel="stylesheet">
+	<style>
+		:root{
+			--bg-1:#0b0b12;
+			--bg-2:#0e0b1a;
+			--twitch:#3a3a3a;
+			--twitch-2:#777777;
+			--pink:#666666;
+			--cyan:#888888;
+			--glow:#9a9a9a;
+			--text:#e8e8f0;
+			--muted:#b8b8c7;
+			--card:#121226cc;
+			--glass:rgba(18,18,38,0.55);
+			--border:rgba(255,255,255,0.08);
+			--shadow:0 10px 40px rgba(0,0,0,0.65), inset 0 1px 0 rgba(255,255,255,0.04);
+			--radius:18px;
+			--radius-sm:12px;
+		}
+
+		*{box-sizing:border-box; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;}
+		html,body{height:100%}
+		html{padding:0; margin:0}
+		body{
+			margin:0;
+			font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,'Helvetica Neue',Arial,'Noto Sans',sans-serif;
+			color:var(--text);
+			background: #1a1a2e;
+			overflow-x:hidden;
+		}
+
+		.container{
+			position:relative;
+			z-index:1;
+			max-width:1100px;
+			margin:40px auto 80px;
+			padding:0 20px;
+		}
+
+		.header{
+			display:grid;
+			grid-template-columns:120px 1fr auto;
+			gap:22px;
+			align-items:center;
+			background:linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02)) , var(--glass);
+			border:1px solid var(--border);
+			box-shadow:var(--shadow), 0 0 0 1px rgba(145,70,255,0.06) inset, 0 0 80px rgba(145,70,255,0.12);
+			backdrop-filter: blur(12px) saturate(130%);
+			border-radius:calc(var(--radius) + 4px);
+			padding:22px;
+			position:relative;
+			overflow:hidden;
+		}
+
+		.avatar{
+			width:120px; height:120px; border-radius:22%;
+			border:1px solid rgba(255,255,255,0.14);
+			background:
+				radial-gradient(circle at 30% 30%, rgba(255,255,255,0.18), transparent 40%),
+				linear-gradient(135deg, rgba(130,130,130,0.35), rgba(80,80,80,0.25));
+			box-shadow:
+				0 12px 40px rgba(0,0,0,0.45),
+				0 0 0 6px rgba(120,120,120,0.08),
+				0 0 0 1px rgba(255,255,255,0.10) inset;
+			display:grid; place-items:center; overflow:hidden;
+		}
+		.avatar img{width:100%; height:100%; object-fit:cover; display:block}
+
+		.title{
+			display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+		}
+		.name{
+			font-family:"Space Grotesk",Inter,sans-serif;
+			font-size:32px; font-weight:800; letter-spacing:0.3px;
+			text-shadow:0 0 30px rgba(145,70,255,0.35);
+		}
+		.username{color:var(--muted); font-weight:600}
+		.bio{color:var(--muted); margin-top:6px; line-height:1.5}
+
+		.stats{
+			display:flex; gap:18px; margin-top:14px; flex-wrap:wrap;
+			color:#dcdcf3;
+		}
+		.stat{
+			background:rgba(255,255,255,0.05);
+			border:1px solid var(--border);
+			border-radius:999px; padding:8px 12px;
+			box-shadow:inset 0 0 24px rgba(145,70,255,0.09), 0 8px 24px rgba(0,0,0,0.25);
+			display:inline-flex; align-items:center; gap:8px;
+		}
+
+		.actions{
+			display:flex; gap:12px; flex-wrap:wrap; justify-self:end;
+		}
+		.button{
+			--c1:var(--twitch); --c2:var(--twitch-2);
+			position:relative;
+			display:inline-flex; align-items:center; gap:10px;
+			padding:12px 16px; border-radius:12px; border:1px solid rgba(255,255,255,0.12);
+			color:#fff; text-decoration:none; font-weight:700;
+			background:linear-gradient(90deg, var(--c1), var(--c2));
+			box-shadow:0 10px 34px rgba(145,70,255,0.35), 0 0 0 1px rgba(255,255,255,0.08) inset;
+			transition:transform .15s ease, box-shadow .2s ease, filter .2s ease;
+		}
+		.button.secondary{
+			--c1:rgba(255,255,255,0.08); --c2:rgba(255,255,255,0.08);
+			color:#e9e9ff;
+			backdrop-filter: blur(6px);
+			box-shadow:0 10px 30px rgba(0,0,0,0.35), inset 0 0 0 1px rgba(255,255,255,0.08);
+		}
+		.button:hover{transform:translateY(-1px); filter:saturate(1.1)}
+
+		.footer{
+			margin-top:20px; text-align:center; color:var(--muted); font-size:13px; position:relative; z-index:2;
+		}
+
+		@media (max-width: 640px){
+			.header{grid-template-columns:80px 1fr; padding:16px}
+			.avatar{width:80px; height:80px}
+			.actions{grid-column:1 / -1; justify-self:start}
+			.name{font-size:24px}
+		}
+	</style>
 </head>
 <body>
-    <h1>Test - If you can see this properly formatted, the issue is with the main index.html</h1>
-    <p>This is a test to see if HTML files are being served correctly.</p>
+	<div class="container">
+		<header class="header">
+			<div class="avatar">
+				<img src="https://behindthebonnet.me/img/avatar.webp" alt="Profile avatar" />
+			</div>
+			<div>
+				<div class="title">
+					<div class="name">ilyambr</div>
+					<div class="username">@ilyambrr</div>
+				</div>
+				<div class="bio">just give me a year max.....</div>
+				<div class="stats">
+					<div class="stat">🎮 Twitch Streamer</div>
+					<div class="stat">📺 Content Creator</div>
+					<div class="stat">🎯 Since 2024</div>
+				</div>
+			</div>
+			<div class="actions">
+				<a class="button" href="https://twitch.tv/ilyambrr" target="_blank">
+					Follow
+				</a>
+				<a class="button secondary" href="https://www.youtube.com/@ilyambr" target="_blank">
+					Subscribe
+				</a>
+			</div>
+		</header>
+
+		<div class="footer">
+			© 2025 ilyambr, made with love <3
+		</div>
+	</div>
 </body>
 </html>
