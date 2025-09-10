@@ -2216,9 +2216,30 @@
 				firebase.initializeApp(firebaseConfig);
 				database = firebase.database();
 				console.log('🔥 Firebase initialized successfully!');
+				// After initial init, check if there's a globally configured DB override and switch for everyone
+				ensureGlobalDatabaseUrl();
 			}
 		} catch (error) {
 			console.log('Firebase not available, using localStorage fallback');
+		}
+
+		// If admins set a global DB URL in siteSettings/firebaseDatabaseUrl, use it for all visitors.
+		// We read it from the current DB and, if different, cache to localStorage and reload to re-init.
+		async function ensureGlobalDatabaseUrl() {
+			try {
+				if (!database) return;
+				const snap = await database.ref('siteSettings/firebaseDatabaseUrl').once('value');
+				const desiredUrl = snap.val();
+				if (desiredUrl && desiredUrl !== firebaseConfig.databaseURL) {
+					console.log('🌍 Global Firebase DB override detected:', desiredUrl);
+					// Cache encrypted so next load uses it before init
+					localStorage.setItem('encryptedFirebaseUrl', encryptUrl(desiredUrl));
+					// Reload to reinitialize Firebase with the global DB URL
+					window.location.reload();
+				}
+			} catch (e) {
+				console.warn('Could not check global database URL override:', e);
+			}
 		}
 
 		// Admin Console Functionality (moved here to be available immediately)
@@ -3926,18 +3947,16 @@
 			if (!confirmed) return;
 			
 			try {
-				// Store the new database URL encrypted in localStorage
+				// Save GLOBALLY so all visitors use this DB
+				await saveGlobalSetting('firebaseDatabaseUrl', newDatabaseUrl);
+				
+				// Also store encrypted locally so this browser switches immediately on reload
 				const encryptedUrl = encryptUrl(newDatabaseUrl);
 				localStorage.setItem('encryptedFirebaseUrl', encryptedUrl);
-				
-				// Remove old unencrypted storage if it exists
 				localStorage.removeItem('customFirebaseUrl');
 				
-				alert('Firebase database URL updated and encrypted! The page will now reload with the new database.');
-				
-				// Reload the page to initialize with new database
+				alert('Firebase database URL saved GLOBALLY! Reloading to apply for this session.');
 				window.location.reload();
-				
 			} catch (error) {
 				console.error('Error updating Firebase database:', error);
 				alert('Error updating Firebase database. Please try again.');
