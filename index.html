@@ -2224,21 +2224,42 @@
 		}
 
 		// If admins set a global DB URL in siteSettings/firebaseDatabaseUrl, use it for all visitors.
-		// We read it from the current DB and, if different, cache to localStorage and reload to re-init.
+		// We probe the DEFAULT database as the source of truth, falling back to the currently-connected DB.
 		async function ensureGlobalDatabaseUrl() {
 			try {
-				if (!database) return;
-				const snap = await database.ref('siteSettings/firebaseDatabaseUrl').once('value');
-				const desiredUrl = snap.val();
+				if (!firebase) return;
+				// 1) Read from DEFAULT DB (canonical).
+				let defaultDesired = null;
+				try {
+					const defaultAppName = 'defaultProbe';
+					const existing = firebase.apps?.find(a => a.name === defaultAppName);
+					const defaultApp = existing || firebase.initializeApp({ ...firebaseConfig, databaseURL: defaultDatabaseUrl }, defaultAppName);
+					const defaultDb = defaultApp.database();
+					const snap = await defaultDb.ref('siteSettings/firebaseDatabaseUrl').once('value');
+					defaultDesired = snap.val();
+				} catch (e) {
+					console.warn('Default DB probe failed:', e);
+				}
+
+				// 2) Read from CURRENT DB as fallback
+				let currentDesired = null;
+				try {
+					if (database) {
+						const snap2 = await database.ref('siteSettings/firebaseDatabaseUrl').once('value');
+						currentDesired = snap2.val();
+					}
+				} catch (e) {
+					console.warn('Current DB probe failed:', e);
+				}
+
+				const desiredUrl = defaultDesired || currentDesired;
 				if (desiredUrl && desiredUrl !== firebaseConfig.databaseURL) {
-					console.log('🌍 Global Firebase DB override detected:', desiredUrl);
-					// Cache encrypted so next load uses it before init
+					console.log('🌍 Applying global Firebase DB override:', desiredUrl);
 					localStorage.setItem('encryptedFirebaseUrl', encryptUrl(desiredUrl));
-					// Reload to reinitialize Firebase with the global DB URL
 					window.location.reload();
 				}
 			} catch (e) {
-				console.warn('Could not check global database URL override:', e);
+				console.warn('Could not check/apply global database URL override:', e);
 			}
 		}
 
@@ -3947,15 +3968,20 @@
 			if (!confirmed) return;
 			
 			try {
-				// Save GLOBALLY so all visitors use this DB
+				// Save GLOBALLY in the CURRENT DB (for users already on it)
 				await saveGlobalSetting('firebaseDatabaseUrl', newDatabaseUrl);
-				
-				// Also store encrypted locally so this browser switches immediately on reload
+				// Also write the override to the DEFAULT DB so new visitors (who start on default) can discover it
+				if (typeof firebase !== 'undefined') {
+					const defaultAppName = 'defaultProbeWrite';
+					const existing = firebase.apps?.find(a => a.name === defaultAppName);
+					const defaultApp = existing || firebase.initializeApp({ ...firebaseConfig, databaseURL: defaultDatabaseUrl }, defaultAppName);
+					await defaultApp.database().ref('siteSettings/firebaseDatabaseUrl').set(newDatabaseUrl);
+				}
+				// Store encrypted locally so this browser uses it immediately on reload
 				const encryptedUrl = encryptUrl(newDatabaseUrl);
 				localStorage.setItem('encryptedFirebaseUrl', encryptedUrl);
 				localStorage.removeItem('customFirebaseUrl');
-				
-				alert('Firebase database URL saved GLOBALLY! Reloading to apply for this session.');
+				alert('Firebase database URL saved GLOBALLY! Reloading to apply now.');
 				window.location.reload();
 			} catch (error) {
 				console.error('Error updating Firebase database:', error);
