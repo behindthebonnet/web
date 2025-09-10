@@ -33,7 +33,7 @@
 
 		*{box-sizing:border-box; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;}
 		html,body{height:100%}
-		html{-webkit-filter:grayscale(100%); filter:grayscale(100%)}
+		html{padding:0; margin:0}
 		body{
 			margin:0;
 			font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,'Helvetica Neue',Arial,'Noto Sans',sans-serif;
@@ -1751,7 +1751,7 @@
 							</div>
 							<div>
 								<label style="display: flex; align-items: center; gap: 8px;">
-									<input type="checkbox" id="grayscaleToggle" onchange="toggleGrayscale()">
+									<input type="checkbox" id="grayscaleToggle" checked onchange="toggleGrayscale()">
 									<span>⚫ Grayscale</span>
 								</label>
 							</div>
@@ -2092,6 +2092,10 @@
 			} catch (error) {
 				console.error('❌ Error loading settings:', error);
 			}
+			
+			// Apply default grayscale effect since checkbox is checked by default
+			document.body.classList.add('effect-grayscale');
+			updateCombinedFilters();
 		};
 
 		function setupFallbackAuth() {
@@ -2154,7 +2158,7 @@
 			
 			// For file:// protocol, show a message about domain restrictions
 			if (window.location.protocol === 'file:') {
-				const useDemo = confirm(`⚠️ OAuth Limitation Detected\n\nGoogle OAuth doesn't work with file:// protocol for security reasons.\n\nTo test OAuth:\n1. Host this file on a web server (localhost:8000, GitHub Pages, etc.)\n2. Add your domain to Google Cloud Console authorized origins\n\nWould you like to use demo admin access for testing?\n\nClick OK for demo access, Cancel to try manual email entry.`);
+				const useDemo = confirm(`⚠️ OAuth Limitation Detected\n\nGoogle OAuth doesn't work with file:// protocol for security reasons.\n\nTo test OAuth:\n1. Host this file on a web server (localhost:8000, behindthebonnet.me, etc.)\n2. Add your domain to Google Cloud Console authorized origins\n\nWould you like to use demo admin access for testing?\n\nClick OK for demo access, Cancel to try manual email entry.`);
 				
 				if (useDemo) {
 					// Simulate successful admin login for testing
@@ -2177,7 +2181,8 @@
 			}
 			
 			// Manual email verification for demonstration/testing
-			const email = prompt(`Enter your email for admin access:\n\nNote: Only ${AUTHORIZED_EMAIL} is authorized.\n\nIf OAuth isn't working, this might be due to:\n• Domain not authorized in Google Cloud Console\n• Missing HTTPS (required for OAuth)\n• CORS restrictions`);
+			const currentDomain = window.location.origin || window.location.protocol + '//' + window.location.host;
+			const email = prompt(`Enter your email for admin access:\n\nNote: Only ${AUTHORIZED_EMAIL} is authorized.\n\nCurrent domain: ${currentDomain}\n\nIf OAuth isn't working, this might be due to:\n• Domain not authorized in Google Cloud Console\n• Missing HTTPS (required for OAuth)\n• CORS restrictions\n\nFor behindthebonnet.me: Make sure to add the domain to Google Cloud Console authorized origins.`);
 			
 			if (email === AUTHORIZED_EMAIL) {
 				adminUser = { email: email, name: "Admin User (Manual)" };
@@ -3235,12 +3240,6 @@
 			
 			if (!newDatabaseUrl) {
 				alert('Please enter a Firebase database URL');
-				return;
-			}
-			
-			// Validate URL format
-			if (!newDatabaseUrl.includes('firebaseapp.com') || !newDatabaseUrl.startsWith('https://')) {
-				alert('Invalid Firebase database URL format. Should be: https://your-project-default-rtdb.firebaseapp.com/');
 				return;
 			}
 			
