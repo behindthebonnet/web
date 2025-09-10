@@ -855,6 +855,7 @@
 
 		/* Website Effects */
 		.effect-color {
+			/* Base class kept for compatibility; dynamic hue is applied via JS */
 			filter: hue-rotate(45deg) saturate(1.5);
 		}
 		
@@ -875,13 +876,18 @@
 		}
 		
 		.effect-blur-bg {
+			/* Deprecated: blur is now controlled via the .bg-glass overlay */
 			backdrop-filter: blur(8px);
 		}
 		
 		.effect-blur-bg .container {
+			/* Deprecated: see note above */
 			background: rgba(0, 0, 0, 0.2);
 			backdrop-filter: blur(10px);
 		}
+
+		/* Helper state to hide the global glass overlay (used by Blur toggle) */
+		.bg-glass.hidden { display: none; }
 		
 		/* Combined effects support */
 		.effect-color.effect-grayscale {
@@ -1789,16 +1795,20 @@
 									<input type="checkbox" id="colorEffectToggle" onchange="toggleColorEffect()">
 									<span>🌈 Color Effect</span>
 								</label>
+								<div id="colorHueRow" style="display:flex; align-items:center; gap:8px; margin-top:8px; padding-left:26px;">
+									<input type="range" id="colorHueSlider" min="0" max="360" value="45" oninput="updateColorHue(this.value)" style="flex:1;">
+									<input type="number" id="colorHueInput" min="0" max="360" value="45" oninput="updateColorHue(this.value)" style="width:70px; padding:6px 8px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); color: var(--text); border-radius: 8px;">
+								</div>
 							</div>
 							<div>
 								<label style="display: flex; align-items: center; gap: 8px;">
-									<input type="checkbox" id="grayscaleToggle" checked onchange="toggleGrayscale()">
+									<input type="checkbox" id="grayscaleToggle" onchange="toggleGrayscale()">
 									<span>⚫ Grayscale</span>
 								</label>
 							</div>
 							<div>
 								<label style="display: flex; align-items: center; gap: 8px;">
-									<input type="checkbox" id="blurToggle" onchange="toggleBlur()">
+									<input type="checkbox" id="blurToggle" checked onchange="toggleBlur()">
 									<span>🌫️ Blur Background</span>
 								</label>
 							</div>
@@ -2134,9 +2144,7 @@
 				console.error('❌ Error loading settings:', error);
 			}
 			
-			// Apply default grayscale effect since checkbox is checked by default
-			document.body.classList.add('effect-grayscale');
-			updateCombinedFilters();
+			// Do not force any default effects here; loadGlobalEffects() will apply saved state
 		};
 
 		function setupFallbackAuth() {
@@ -2996,7 +3004,7 @@
 		}
 
 		async function updatePageLogo() {
-			const logoUrl = document.getElementById('pageLogoInput').value.trim();
+			const logoUrl = document.getElementById('pageLogo').value.trim();
 			if (!logoUrl) {
 				alert('Please enter a logo URL');
 				return;
@@ -3014,13 +3022,13 @@
 			// Update current settings display
 			const shortUrl = logoUrl.length > 30 ? logoUrl.substring(0, 30) + '...' : logoUrl;
 			document.getElementById('currentPageLogo').textContent = shortUrl;
-			document.getElementById('pageLogoInput').value = '';
+			document.getElementById('pageLogo').value = '';
 			
 			alert('Page logo updated GLOBALLY! All visitors will see this change.');
 		}
 
 		async function updateBio() {
-			const bio = document.getElementById('bioTextInput').value.trim();
+			const bio = document.getElementById('bioText').value.trim();
 			if (!bio) {
 				alert('Please enter a bio');
 				return;
@@ -3037,7 +3045,7 @@
 			
 			// Update current settings display
 			document.getElementById('currentBio').textContent = bio.length > 30 ? bio.substring(0, 30) + '...' : bio;
-			document.getElementById('bioTextInput').value = '';
+			document.getElementById('bioText').value = '';
 			
 			alert('Bio updated GLOBALLY! All visitors will see this change.');
 		}
@@ -3474,10 +3482,11 @@
 
 		function toggleBlur() {
 			const isChecked = document.getElementById('blurToggle').checked;
-			if (isChecked) {
-				document.body.classList.add('effect-blur-bg');
-			} else {
-				document.body.classList.remove('effect-blur-bg');
+			// Control the dedicated glass overlay element for consistent blur
+			const glass = document.querySelector('.bg-glass');
+			if (glass) {
+				if (isChecked) glass.classList.remove('hidden');
+				else glass.classList.add('hidden');
 			}
 		}
 
@@ -3519,7 +3528,9 @@
 				effects.push('invert(1)');
 			}
 			if (document.body.classList.contains('effect-color')) {
-				effects.push('hue-rotate(45deg)');
+				// Use dynamic hue from control if available
+				const hue = parseInt(document.getElementById('colorHueInput')?.value || '45', 10);
+				effects.push(`hue-rotate(${isNaN(hue) ? 45 : hue}deg)`);
 				effects.push('saturate(1.5)');
 			}
 			if (document.body.classList.contains('effect-grayscale')) {
@@ -3542,6 +3553,21 @@
 			}
 		}
 
+		function setColorFilterFromHue(hue) {
+			const h = Math.min(360, Math.max(0, parseInt(hue || 45, 10)));
+			const slider = document.getElementById('colorHueSlider');
+			const input = document.getElementById('colorHueInput');
+			if (slider) slider.value = h;
+			if (input) input.value = h;
+			if (document.body.classList.contains('effect-color')) {
+				updateCombinedFilters();
+			}
+		}
+
+		function updateColorHue(val) {
+			setColorFilterFromHue(val);
+		}
+
 		function resetAllEffects() {
 			// Reset all checkboxes
 			document.getElementById('colorEffectToggle').checked = false;
@@ -3550,10 +3576,15 @@
 			document.getElementById('sepiaToggle').checked = false;
 			document.getElementById('invertToggle').checked = false;
 			document.getElementById('brightnessToggle').checked = false;
+			// Reset hue controls to default 45
+			setColorFilterFromHue(45);
 			
 			// Remove all effect classes
 			document.body.classList.remove('effect-color', 'effect-grayscale', 'effect-blur-bg', 'effect-sepia', 'effect-invert', 'effect-brightness');
 			document.body.style.filter = '';
+			// Hide the blur overlay
+			const glass = document.querySelector('.bg-glass');
+			if (glass) glass.classList.add('hidden');
 			
 			alert('All visual effects have been reset!');
 		}
@@ -3565,7 +3596,8 @@
 				blur: document.getElementById('blurToggle').checked,
 				sepia: document.getElementById('sepiaToggle').checked,
 				invert: document.getElementById('invertToggle').checked,
-				brightness: document.getElementById('brightnessToggle').checked
+				brightness: document.getElementById('brightnessToggle').checked,
+				hue: parseInt(document.getElementById('colorHueInput')?.value || '45', 10)
 			};
 
 			// Save GLOBALLY for ALL users
@@ -3587,11 +3619,16 @@
 					document.getElementById('sepiaToggle').checked = effects.sepia || false;
 					document.getElementById('invertToggle').checked = effects.invert || false;
 					document.getElementById('brightnessToggle').checked = effects.brightness || false;
+					setColorFilterFromHue(typeof effects.hue === 'number' ? effects.hue : 45);
 					
 					// Apply the effects to the page
 					if (effects.color) document.body.classList.add('effect-color');
 					if (effects.grayscale) document.body.classList.add('effect-grayscale');
-					if (effects.blur) document.body.classList.add('effect-blur-bg');
+					// Blur now toggles the .bg-glass overlay
+					const glass = document.querySelector('.bg-glass');
+					if (glass) {
+						if (effects.blur) glass.classList.remove('hidden'); else glass.classList.add('hidden');
+					}
 					if (effects.sepia) document.body.classList.add('effect-sepia');
 					if (effects.invert) document.body.classList.add('effect-invert');
 					if (effects.brightness) document.body.classList.add('effect-brightness');
@@ -3602,6 +3639,41 @@
 				} catch (e) {
 					console.error('Error parsing saved effects:', e);
 				}
+			} else {
+				// If DB is available but no saved effects there, migrate from local cache once
+				try {
+					const cached = localStorage.getItem('admin-websiteEffects');
+					if (database && cached) {
+						await saveGlobalSetting('websiteEffects', cached);
+						const effects = JSON.parse(cached);
+						document.getElementById('colorEffectToggle').checked = !!effects.color;
+						document.getElementById('grayscaleToggle').checked = !!effects.grayscale;
+						document.getElementById('blurToggle').checked = !!effects.blur;
+						document.getElementById('sepiaToggle').checked = !!effects.sepia;
+						document.getElementById('invertToggle').checked = !!effects.invert;
+						document.getElementById('brightnessToggle').checked = !!effects.brightness;
+						setColorFilterFromHue(typeof effects.hue === 'number' ? effects.hue : 45);
+						if (effects.color) document.body.classList.add('effect-color');
+						if (effects.grayscale) document.body.classList.add('effect-grayscale');
+						const glassM = document.querySelector('.bg-glass');
+						if (glassM) { if (effects.blur) glassM.classList.remove('hidden'); else glassM.classList.add('hidden'); }
+						if (effects.sepia) document.body.classList.add('effect-sepia');
+						if (effects.invert) document.body.classList.add('effect-invert');
+						if (effects.brightness) document.body.classList.add('effect-brightness');
+						updateCombinedFilters();
+						console.log('⬆️ Migrated website effects from local cache to Firebase');
+						return;
+					}
+				} catch (e) {
+					console.warn('Effects migration skipped:', e);
+				}
+				// No saved effects: ensure default blur overlay matches toggle (checked by default)
+				const glass = document.querySelector('.bg-glass');
+				const blurChecked = document.getElementById('blurToggle')?.checked;
+				if (glass) {
+					if (blurChecked) glass.classList.remove('hidden'); else glass.classList.add('hidden');
+				}
+				setColorFilterFromHue(45);
 			}
 		}
 
