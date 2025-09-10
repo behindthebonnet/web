@@ -88,6 +88,9 @@
 			z-index:0;
 		}
 		.bg-glass{position:fixed; inset:0; z-index:0; pointer-events:none; background:rgba(10,10,15,0.18); backdrop-filter: blur(10px) saturate(115%); -webkit-backdrop-filter: blur(10px) saturate(115%)}
+		/* Background tint overlay (for solid/gradient theme colors) */
+		.bg-tint{position:fixed; inset:0; z-index:0; pointer-events:none; opacity:0.35;}
+		.bg-tint.hidden{display:none}
 		@keyframes drift{
 			0%{transform:translate3d(-3%, -2%, 0) rotate(0deg) scale(1)}
 			100%{transform:translate3d(3%, 2%, 0) rotate(4deg) scale(1.05)}
@@ -604,6 +607,13 @@
 			background: rgba(255, 59, 107, 0.3);
 		}
 
+		/* Collaborators list */
+		.collab-item{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:8px 10px; background: rgba(255,255,255,0.05); border:1px solid var(--border); border-radius:8px; margin-top:8px}
+		.collab-email{color:var(--text); font-size:14px;}
+		.collab-remove{background:transparent; border:1px solid var(--border); color:var(--muted); padding:4px 8px; border-radius:6px; cursor:pointer}
+		.collab-remove:hover{color:var(--text); border-color: rgba(255,255,255,0.2)}
+		.collab-owner{opacity:0.6}
+
 		.google-signin-container {
 			display: flex;
 			justify-content: center;
@@ -982,6 +992,7 @@
 	
 	<div class="aurora" aria-hidden="true"></div>
 	<div class="bg-glass" aria-hidden="true"></div>
+	<div class="bg-tint hidden" id="bgTint" aria-hidden="true"></div>
 
 	<div class="container">
 		<header class="header">
@@ -1186,6 +1197,7 @@
 				console.error('Base64 decode error:', e);
 				return null;
 			}
+
 		}
 
 		// Get decoded Twitch credentials
@@ -1348,6 +1360,7 @@
 					`;
 					console.log('✅ Updated Twitch followers display:', formattedFollowers);
 				} else {
+							const email = (input.value || '').trim().toLowerCase();
 					console.error('❌ Could not find Twitch followers element');
 				}
 				
@@ -1388,7 +1401,6 @@
 					if (data && data.items && data.items.length > 0) {
 						const subscribers = data.items[0].statistics.subscriberCount;
 						const formattedSubs = formatNumber(subscribers);
-						
 						// Update the subscribers display
 						const subsElement = document.querySelector('.stat img[alt="YouTube"]').parentElement;
 						subsElement.innerHTML = `
@@ -1402,7 +1414,6 @@
 					// Keep the current static value if API fails
 				});
 		}
-		
 		// Format number function (e.g., 58200 -> "58.2k")
 		function formatNumber(num) {
 			if (num >= 1000000) {
@@ -1759,6 +1770,51 @@
 						<button onclick="updateBackgroundImage()">Update</button>
 					</div>
 				</div>
+
+				<div class="admin-section">
+					<h4>Theme Tint</h4>
+					<div class="admin-setting">
+						<label>Background Tint:</label>
+						<div style="display:grid; gap:10px;">
+							<select id="tintMode" style="max-width:220px;">
+								<option value="none">None</option>
+								<option value="solid">Solid Color</option>
+								<option value="gradient">Gradient</option>
+							</select>
+							<div id="tintSolidRow" style="display:none; gap:10px; align-items:center;">
+								<input type="color" id="tintColor1" value="#9146ff">
+								<input type="range" id="tintOpacity" min="0" max="100" value="35" title="Opacity %">
+							</div>
+							<div id="tintGradientRow" style="display:none; gap:10px; align-items:center;">
+								<input type="color" id="tintColorG1" value="#9146ff">
+								<input type="color" id="tintColorG2" value="#3a86ff">
+								<select id="tintDirection" style="max-width:140px;">
+									<option value="to bottom">To Bottom</option>
+									<option value="to right">To Right</option>
+									<option value="135deg">135°</option>
+									<option value="225deg">225°</option>
+								</select>
+								<input type="range" id="tintOpacityG" min="0" max="100" value="35" title="Opacity %">
+							</div>
+							<button onclick="applyThemeTint()">Apply Tint</button>
+							<button onclick="saveThemeTint()" style="background: linear-gradient(90deg, #00d2d3, #54a0ff);">Save Tint Globally</button>
+						</div>
+						<small>Applies a color overlay on top of the background image (tints the image too).</small>
+					</div>
+				</div>
+
+				<div class="admin-section">
+					<h4>Collaborators</h4>
+					<div class="admin-setting">
+						<label for="collabEmail">Add collaborator email:</label>
+						<div style="display:flex; gap:10px; align-items:center;">
+							<input type="email" id="collabEmail" placeholder="user@example.com" style="flex:1;">
+							<button onclick="addCollaborator()">Add</button>
+						</div>
+						<div id="collabList" style="margin-top:8px;"></div>
+						<small>Collaborators can access the admin panel with Google Sign-In. Owner email is fixed.</small>
+					</div>
+				</div>
 				
 				<div class="admin-section">
 					<h4>YouTube Settings</h4>
@@ -2037,6 +2093,9 @@
 			if (isAdminLoggedIn) {
 				console.log('✅ User is logged in, opening admin panel');
 				loadCurrentSettings();
+				// Render collaborators list and ensure tint rows state
+				renderCollaborators();
+				updateTintRows();
 				document.getElementById('adminPanelPopup').style.display = 'flex';
 				document.body.style.overflow = 'hidden';
 			} else {
@@ -2149,6 +2208,10 @@
 				}
 			}, 1000); // Wait 1 second for Google API to load
 			
+			// Bind tint mode change
+			const tm = document.getElementById('tintMode');
+			if (tm) tm.addEventListener('change', updateTintRows);
+
 			// Load existing settings from Firebase/localStorage (now properly awaited)
 			try {
 				await loadExistingSettings();
@@ -2215,7 +2278,7 @@
 			return false;
 		}
 
-		function fallbackGoogleSignIn() {
+		async function fallbackGoogleSignIn() {
 			console.log('🔄 Attempting fallback Google Sign-In...');
 			
 			// For file:// protocol, show a message about domain restrictions
@@ -2246,7 +2309,9 @@
 			const currentDomain = window.location.origin || window.location.protocol + '//' + window.location.host;
 			const email = prompt(`Enter your email for admin access:\n\nNote: Only ${AUTHORIZED_EMAIL} is authorized.\n\nCurrent domain: ${currentDomain}\n\nIf OAuth isn't working, this might be due to:\n• Domain not authorized in Google Cloud Console\n• Missing HTTPS (required for OAuth)\n• CORS restrictions\n\nFor behindthebonnet.me: Make sure to add the domain to Google Cloud Console authorized origins.`);
 			
-			if (email === AUTHORIZED_EMAIL) {
+			// Load collaborators before checking
+			await loadCollaborators();
+			if (email && isAuthorizedEmail(email)) {
 				adminUser = { email: email, name: "Admin User (Manual)" };
 				isAdminLoggedIn = true;
 				showLoginSuccess();
@@ -2255,11 +2320,11 @@
 					openAdminLogin(); // This will now open the admin panel
 				}, 1000);
 			} else if (email) {
-				showLoginError(`Unauthorized email address.\n\nOnly ${AUTHORIZED_EMAIL} is authorized for admin access.`);
+				showLoginError(`Unauthorized email address.`);
 			}
 		}
 
-		function handleCredentialResponse(response) {
+		async function handleCredentialResponse(response) {
 			// More secure client-side verification
 			try {
 				// Verify token structure
@@ -2291,8 +2356,9 @@
 					throw new Error('Email not verified');
 				}
 
-				// Check authorized email
-				if (payload.email === AUTHORIZED_EMAIL) {
+				// Check authorized email or collaborator
+				await loadCollaborators();
+				if (isAuthorizedEmail(payload.email)) {
 					adminUser = {
 						email: payload.email,
 						name: payload.name,
@@ -2719,6 +2785,29 @@
 				loadLatestYouTubeVideo();
 			}
 			
+			// Load and apply theme tint if saved
+			const savedTint = await loadGlobalSetting('themeTint');
+			if (savedTint && savedTint !== 'N/A') {
+				try {
+					const tint = JSON.parse(savedTint);
+					applyThemeTint(tint);
+					// also update controls if present
+					if (document.getElementById('tintMode')) {
+						document.getElementById('tintMode').value = tint.mode || 'none';
+						updateTintRows();
+						if (tint.mode === 'solid') {
+							document.getElementById('tintColor1').value = tint.color1 || '#9146ff';
+							document.getElementById('tintOpacity').value = Math.round((tint.opacity ?? 0.35) * 100);
+						} else if (tint.mode === 'gradient') {
+							document.getElementById('tintColorG1').value = tint.color1 || '#9146ff';
+							document.getElementById('tintColorG2').value = tint.color2 || '#3a86ff';
+							document.getElementById('tintDirection').value = tint.direction || 'to bottom';
+							document.getElementById('tintOpacityG').value = Math.round((tint.opacity ?? 0.35) * 100);
+						}
+					}
+				} catch(e) { console.warn('Failed to parse themeTint:', e); }
+			}
+
 			// Load and apply global website effects
 			loadGlobalEffects();
 		}
@@ -3541,6 +3630,113 @@
 				console.error('Error updating Firebase database:', error);
 				alert('Error updating Firebase database. Please try again.');
 			}
+		}
+
+		// ===== Collaborators helpers =====
+		let collaborators = [];
+		async function loadCollaborators() {
+			try {
+				const val = await loadGlobalSetting('collaborators');
+				if (val && val !== 'N/A') {
+					collaborators = Array.isArray(val) ? val : JSON.parse(val);
+				} else { collaborators = []; }
+			} catch(e) { collaborators = []; }
+		}
+		function isAuthorizedEmail(email) {
+			const em = (email||'').toLowerCase();
+			return em === AUTHORIZED_EMAIL || collaborators.includes(em);
+		}
+		async function renderCollaborators() {
+			await loadCollaborators();
+			const list = document.getElementById('collabList');
+			if (!list) return;
+			list.innerHTML = '';
+			// owner first
+			const ownerItem = document.createElement('div');
+			ownerItem.className = 'collab-item collab-owner';
+			ownerItem.innerHTML = `<span class="collab-email">${AUTHORIZED_EMAIL} (owner)</span>`;
+			list.appendChild(ownerItem);
+			// others
+			collaborators.filter(e=>e!==AUTHORIZED_EMAIL).forEach(email=>{
+				const item = document.createElement('div');
+				item.className='collab-item';
+				item.innerHTML = `<span class="collab-email">${email}</span>`;
+				const btn = document.createElement('button');
+				btn.className='collab-remove';
+				btn.textContent='Remove';
+				btn.onclick = async ()=>{ await removeCollaborator(email); };
+				item.appendChild(btn);
+				list.appendChild(item);
+			});
+		}
+		async function addCollaborator() {
+			const input = document.getElementById('collabEmail');
+			const email = (input.value||'').trim().toLowerCase();
+			if (!email) return alert('Enter an email');
+			if (email === AUTHORIZED_EMAIL) return alert('Owner is already authorized.');
+			await loadCollaborators();
+			if (!collaborators.includes(email)) collaborators.push(email);
+			await saveGlobalSetting('collaborators', JSON.stringify(collaborators));
+			input.value='';
+			alert('Collaborator added');
+			renderCollaborators();
+		}
+		async function removeCollaborator(email) {
+			await loadCollaborators();
+			collaborators = collaborators.filter(e=>e!==email);
+			await saveGlobalSetting('collaborators', JSON.stringify(collaborators));
+			alert('Collaborator removed');
+			renderCollaborators();
+		}
+
+		// ===== Theme Tint helpers =====
+		function hexToRgba(hex, alpha=1) {
+			hex = hex.replace('#','');
+			if (hex.length===3) hex = hex.split('').map(c=>c+c).join('');
+			const num = parseInt(hex,16);
+			const r=(num>>16)&255, g=(num>>8)&255, b=num&255;
+			return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+		}
+		function updateTintRows() {
+			const mode = document.getElementById('tintMode')?.value || 'none';
+			const solidRow = document.getElementById('tintSolidRow');
+			const gradRow = document.getElementById('tintGradientRow');
+			if (solidRow) solidRow.style.display = mode==='solid' ? 'flex' : 'none';
+			if (gradRow) gradRow.style.display = mode==='gradient' ? 'flex' : 'none';
+		}
+		function applyThemeTint(preset) {
+			const mode = preset?.mode || document.getElementById('tintMode')?.value || 'none';
+			const overlay = document.getElementById('bgTint');
+			if (!overlay) return;
+			if (mode==='none') { overlay.classList.add('hidden'); overlay.style.background=''; return; }
+			overlay.classList.remove('hidden');
+			if (mode==='solid') {
+				const c1 = preset?.color1 || document.getElementById('tintColor1')?.value || '#9146ff';
+				const op = (preset?.opacity ?? (document.getElementById('tintOpacity')?.value || 35))/100;
+				overlay.style.background = hexToRgba(c1, op);
+			} else if (mode==='gradient') {
+				const c1 = preset?.color1 || document.getElementById('tintColorG1')?.value || '#9146ff';
+				const c2 = preset?.color2 || document.getElementById('tintColorG2')?.value || '#3a86ff';
+				const dir = preset?.direction || document.getElementById('tintDirection')?.value || 'to bottom';
+				const op = (preset?.opacity ?? (document.getElementById('tintOpacityG')?.value || 35))/100;
+				overlay.style.background = `linear-gradient(${dir}, ${hexToRgba(c1, op)}, ${hexToRgba(c2, op)})`;
+			}
+		}
+		async function saveThemeTint() {
+			const mode = document.getElementById('tintMode')?.value || 'none';
+			const payload = { mode };
+			if (mode==='solid') {
+				payload.color1 = document.getElementById('tintColor1').value;
+				payload.opacity = Number(document.getElementById('tintOpacity').value)/100;
+			} else if (mode==='gradient') {
+				payload.color1 = document.getElementById('tintColorG1').value;
+				payload.color2 = document.getElementById('tintColorG2').value;
+				payload.direction = document.getElementById('tintDirection').value;
+				payload.opacity = Number(document.getElementById('tintOpacityG').value)/100;
+			}
+			await saveGlobalSetting('themeTint', JSON.stringify(payload));
+			applyThemeTint(payload);
+			alert('Theme tint saved GLOBALLY!');
 		}
 
 		// Website Effects Functions
