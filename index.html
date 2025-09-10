@@ -1287,11 +1287,20 @@
 					return;
 				}
 
+				// Get the saved username from settings, fallback to default
+				const savedUsername = await loadGlobalSetting('username');
+				let usernameForAPI = twitchConfig.username; // default fallback
+				
+				if (savedUsername && savedUsername !== 'N/A') {
+					// Clean the username (remove @ if present)
+					usernameForAPI = savedUsername.replace('@', '');
+				}
+
 				console.log('🔄 Fetching Twitch followers using official API...');
-				console.log('👤 Username:', twitchConfig.username);
+				console.log('👤 Username:', usernameForAPI);
 				
 				// Get user ID first
-				const userId = await getTwitchUserId(twitchConfig.username);
+				const userId = await getTwitchUserId(usernameForAPI);
 				console.log('👤 Twitch User ID:', userId);
 				
 				// Get follower count
@@ -1668,16 +1677,30 @@
 				<div class="admin-section">
 					<h4>Schedule Settings</h4>
 					<div class="admin-setting">
-						<label for="saturdayTime">Saturday Stream Time:</label>
-						<input type="text" id="saturdayTime" placeholder="5:00PM">
+						<label for="saturdayTime">Saturday Stream Time & Date:</label>
+						<div style="display: flex; gap: 10px; align-items: center;">
+							<input type="text" id="saturdayTime" placeholder="5:00PM" style="flex: 1;">
+							<select id="saturdayDate" style="flex: 1;">
+								<option value="auto">Auto (Next Saturday)</option>
+								<option value="custom">Custom Date</option>
+							</select>
+							<input type="date" id="saturdayCustomDate" style="flex: 1; display: none;">
+						</div>
 						<button onclick="updateSaturdayTime()">Update</button>
-						<small>e.g., 5:00PM, 17:00, etc.</small>
+						<small>Time: e.g., 5:00PM, 17:00, etc. | Date: Auto calculates next Saturday or choose custom date</small>
 					</div>
 					<div class="admin-setting">
-						<label for="sundayTime">Sunday Stream Time:</label>
-						<input type="text" id="sundayTime" placeholder="6:00PM">
+						<label for="sundayTime">Sunday Stream Time & Date:</label>
+						<div style="display: flex; gap: 10px; align-items: center;">
+							<input type="text" id="sundayTime" placeholder="6:00PM" style="flex: 1;">
+							<select id="sundayDate" style="flex: 1;">
+								<option value="auto">Auto (Next Sunday)</option>
+								<option value="custom">Custom Date</option>
+							</select>
+							<input type="date" id="sundayCustomDate" style="flex: 1; display: none;">
+						</div>
 						<button onclick="updateSundayTime()">Update</button>
-						<small>e.g., 6:00PM, 18:00, etc.</small>
+						<small>Time: e.g., 6:00PM, 18:00, etc. | Date: Auto calculates next Sunday or choose custom date</small>
 					</div>
 				</div>
 				
@@ -2501,17 +2524,43 @@
 				}
 			}
 			
-			// Apply saved schedule times
+			// Apply saved schedule times with date logic
 			if (savedSaturdayTime && savedSaturdayTime !== 'N/A') {
 				const saturdayElement = document.getElementById('saturdaySchedule');
 				if (saturdayElement) {
-					saturdayElement.textContent = `Saturday, ${savedSaturdayTime}`;
+					// Load date settings
+					const saturdayDateMode = await loadGlobalSetting('saturdayDateMode') || 'auto';
+					const saturdayCustomDate = await loadGlobalSetting('saturdayCustomDate') || '';
+					
+					let displayDate;
+					if (saturdayDateMode === 'custom' && saturdayCustomDate) {
+						const customDateObj = new Date(saturdayCustomDate);
+						displayDate = formatScheduleDate(customDateObj);
+					} else {
+						// Auto mode - next Saturday
+						const nextSaturday = getNextWeekdayDate(6); // 6 = Saturday
+						displayDate = formatScheduleDate(nextSaturday);
+					}
+					saturdayElement.textContent = `${displayDate}, ${savedSaturdayTime}`;
 				}
 			}
 			if (savedSundayTime && savedSundayTime !== 'N/A') {
 				const sundayElement = document.getElementById('sundaySchedule');
 				if (sundayElement) {
-					sundayElement.textContent = `Sunday, ${savedSundayTime}`;
+					// Load date settings
+					const sundayDateMode = await loadGlobalSetting('sundayDateMode') || 'auto';
+					const sundayCustomDate = await loadGlobalSetting('sundayCustomDate') || '';
+					
+					let displayDate;
+					if (sundayDateMode === 'custom' && sundayCustomDate) {
+						const customDateObj = new Date(sundayCustomDate);
+						displayDate = formatScheduleDate(customDateObj);
+					} else {
+						// Auto mode - next Sunday
+						const nextSunday = getNextWeekdayDate(0); // 0 = Sunday
+						displayDate = formatScheduleDate(nextSunday);
+					}
+					sundayElement.textContent = `${displayDate}, ${savedSundayTime}`;
 				}
 			}
 			
@@ -2670,6 +2719,10 @@
 			const currentSubscribeButtonText = await loadGlobalSetting('subscribeButtonText') || '';
 			const currentSaturdayTime = await loadGlobalSetting('saturdayTime') || '';
 			const currentSundayTime = await loadGlobalSetting('sundayTime') || '';
+			const currentSaturdayDateMode = await loadGlobalSetting('saturdayDateMode') || 'auto';
+			const currentSundayDateMode = await loadGlobalSetting('sundayDateMode') || 'auto';
+			const currentSaturdayCustomDate = await loadGlobalSetting('saturdayCustomDate') || '';
+			const currentSundayCustomDate = await loadGlobalSetting('sundayCustomDate') || '';
 			
 			// Display current settings
 			document.getElementById('currentDisplayName').textContent = currentDisplayName === 'N/A' ? 'N/A' : currentDisplayName;
@@ -2696,6 +2749,28 @@
 			document.getElementById('currentSubscribeButtonText').textContent = currentSubscribeButtonText || 'Subscribe';
 			document.getElementById('currentSaturdayTime').textContent = currentSaturdayTime || 'N/A';
 			document.getElementById('currentSundayTime').textContent = currentSundayTime || 'N/A';
+			
+			// Set date selector values
+			const saturdayDateSelect = document.getElementById('saturdayDate');
+			const sundayDateSelect = document.getElementById('sundayDate');
+			const saturdayCustomDate = document.getElementById('saturdayCustomDate');
+			const sundayCustomDate = document.getElementById('sundayCustomDate');
+			
+			if (saturdayDateSelect) {
+				saturdayDateSelect.value = currentSaturdayDateMode;
+				if (currentSaturdayDateMode === 'custom') {
+					saturdayCustomDate.style.display = 'block';
+					saturdayCustomDate.value = currentSaturdayCustomDate;
+				}
+			}
+			
+			if (sundayDateSelect) {
+				sundayDateSelect.value = currentSundayDateMode;
+				if (currentSundayDateMode === 'custom') {
+					sundayCustomDate.style.display = 'block';
+					sundayCustomDate.value = currentSundayCustomDate;
+				}
+			}
 			
 			// Display current Firebase database URL
 			document.getElementById('currentFirebaseUrl').textContent = firebaseConfig.databaseURL;
@@ -2825,6 +2900,10 @@
 			// Update current settings display
 			document.getElementById('currentUsername').textContent = username;
 			document.getElementById('username').value = '';
+			
+			// Refresh Twitch followers with new username
+			console.log('🔄 Username changed, refreshing Twitch followers...');
+			updateTwitchFollowers();
 			
 			alert('Username updated GLOBALLY! All visitors will see this change.');
 		}
@@ -3183,16 +3262,34 @@
 
 		async function updateSaturdayTime() {
 			const time = document.getElementById('saturdayTime').value.trim();
+			const dateMode = document.getElementById('saturdayDate').value;
+			const customDate = document.getElementById('saturdayCustomDate').value;
+			
 			if (!time) {
 				alert('Please enter Saturday stream time');
 				return;
 			}
 
+			// Save time and date settings
 			await saveGlobalSetting('saturdayTime', time);
+			await saveGlobalSetting('saturdayDateMode', dateMode);
+			if (dateMode === 'custom' && customDate) {
+				await saveGlobalSetting('saturdayCustomDate', customDate);
+			}
 			
+			// Update display with proper date calculation
 			const saturdayElement = document.getElementById('saturdaySchedule');
 			if (saturdayElement) {
-				saturdayElement.textContent = `Saturday, ${time}`;
+				let displayDate;
+				if (dateMode === 'custom' && customDate) {
+					const customDateObj = new Date(customDate);
+					displayDate = formatScheduleDate(customDateObj);
+				} else {
+					// Auto mode - next Saturday
+					const nextSaturday = getNextWeekdayDate(6); // 6 = Saturday
+					displayDate = formatScheduleDate(nextSaturday);
+				}
+				saturdayElement.textContent = `${displayDate}, ${time}`;
 			}
 			
 			document.getElementById('saturdayTime').value = '';
@@ -3201,16 +3298,34 @@
 
 		async function updateSundayTime() {
 			const time = document.getElementById('sundayTime').value.trim();
+			const dateMode = document.getElementById('sundayDate').value;
+			const customDate = document.getElementById('sundayCustomDate').value;
+			
 			if (!time) {
 				alert('Please enter Sunday stream time');
 				return;
 			}
 
+			// Save time and date settings
 			await saveGlobalSetting('sundayTime', time);
+			await saveGlobalSetting('sundayDateMode', dateMode);
+			if (dateMode === 'custom' && customDate) {
+				await saveGlobalSetting('sundayCustomDate', customDate);
+			}
 			
+			// Update display with proper date calculation
 			const sundayElement = document.getElementById('sundaySchedule');
 			if (sundayElement) {
-				sundayElement.textContent = `Sunday, ${time}`;
+				let displayDate;
+				if (dateMode === 'custom' && customDate) {
+					const customDateObj = new Date(customDate);
+					displayDate = formatScheduleDate(customDateObj);
+				} else {
+					// Auto mode - next Sunday
+					const nextSunday = getNextWeekdayDate(0); // 0 = Sunday
+					displayDate = formatScheduleDate(nextSunday);
+				}
+				sundayElement.textContent = `${displayDate}, ${time}`;
 			}
 			
 			document.getElementById('sundayTime').value = '';
@@ -3534,6 +3649,38 @@
 				}, 600);
 			}
 		}, 5000);
+		
+		// Date selector handlers for schedule settings
+		function setupDateSelectors() {
+			const saturdayDateSelect = document.getElementById('saturdayDate');
+			const saturdayCustomDate = document.getElementById('saturdayCustomDate');
+			const sundayDateSelect = document.getElementById('sundayDate');
+			const sundayCustomDate = document.getElementById('sundayCustomDate');
+			
+			if (saturdayDateSelect) {
+				saturdayDateSelect.addEventListener('change', function() {
+					if (this.value === 'custom') {
+						saturdayCustomDate.style.display = 'block';
+					} else {
+						saturdayCustomDate.style.display = 'none';
+					}
+				});
+			}
+			
+			if (sundayDateSelect) {
+				sundayDateSelect.addEventListener('change', function() {
+					if (this.value === 'custom') {
+						sundayCustomDate.style.display = 'block';
+					} else {
+						sundayCustomDate.style.display = 'none';
+					}
+				});
+			}
+		}
+		
+		// Call setup when page loads
+		setTimeout(setupDateSelectors, 100);
+		
 	</script>
 	</div> <!-- End page-content -->
 </body>
