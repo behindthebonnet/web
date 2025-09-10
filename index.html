@@ -1593,6 +1593,7 @@
 						<div style="display:flex; gap:10px; align-items:center;">
 							<input type="url" id="pageLogo" placeholder="https://example.com/logo.svg" style="flex:2;">
 							<input type="text" id="pageLogoResolution" placeholder="1920x1080" style="flex:1;" title="Enter source resolution (e.g., 1920x1080)">
+							<input type="text" id="pageLogoSize" placeholder="135x135" style="flex:1;" title="Displayed size (widthxheight in px)">
 						</div>
 						<button onclick="updatePageLogo()">Update</button>
 						<small>URL and optional source resolution; the logo is scaled consistently to fit the box.</small>
@@ -2374,6 +2375,7 @@
 			const savedVideo = await loadGlobalSetting('youtube-video');
 			const savedPageLogo = await loadGlobalSetting('pageLogo');
 			const savedLogoInvert = await loadGlobalSetting('logoInvert');
+			const savedLogoSize = await loadGlobalSetting('pageLogoSize');
 			const savedBio = await loadGlobalSetting('bioText');
 			const savedAboutText = await loadGlobalSetting('aboutText');
 			const savedStreamingYear = await loadGlobalSetting('streamingYear');
@@ -2459,6 +2461,15 @@
 				const logoElement = document.getElementById('pageLogoImg');
 				if (logoElement) {
 					logoElement.src = savedPageLogo;
+				}
+			}
+			// Apply saved page logo size (widthxheight)
+			if (savedLogoSize && /^\d{2,5}x\d{2,5}$/i.test(savedLogoSize)) {
+				const [w, h] = savedLogoSize.toLowerCase().split('x');
+				const logoBox = document.querySelector('.page-logo');
+				if (logoBox) {
+					logoBox.style.width = w + 'px';
+					logoBox.style.height = h + 'px';
 				}
 			}
 			// Apply saved logo inversion state (default true)
@@ -2758,6 +2769,7 @@
 			const currentVideo = await loadGlobalSetting('youtube-video') || 'N/A';
 			const currentPageLogo = await loadGlobalSetting('pageLogo') || '';
 			const currentPageLogoResolution = await loadGlobalSetting('pageLogoResolution') || '';
+			const currentPageLogoSize = await loadGlobalSetting('pageLogoSize') || '';
 			const currentLogoInvert = await loadGlobalSetting('logoInvert');
 			const currentBio = await loadGlobalSetting('bioText') || '';
 			const currentAboutText = await loadGlobalSetting('aboutText') || '';
@@ -2796,6 +2808,8 @@
 			document.getElementById('currentPageLogo').textContent = currentPageLogo ? (currentPageLogo.length > 30 ? currentPageLogo.substring(0, 30) + '...' : currentPageLogo) : 'Default';
 			const resInput = document.getElementById('pageLogoResolution');
 			if (resInput) resInput.value = currentPageLogoResolution;
+			const sizeInput = document.getElementById('pageLogoSize');
+			if (sizeInput) sizeInput.value = currentPageLogoSize || '135x135';
 			const invToggle = document.getElementById('logoInvertToggle');
 			if (invToggle) invToggle.checked = (currentLogoInvert === null || currentLogoInvert === undefined) ? true : !!currentLogoInvert;
 			document.getElementById('currentBio').textContent = currentBio ? (currentBio.length > 30 ? currentBio.substring(0, 30) + '...' : currentBio) : 'N/A';
@@ -3036,8 +3050,10 @@
 		async function updatePageLogo() {
 			const logoUrl = document.getElementById('pageLogo').value.trim();
 			const resolution = (document.getElementById('pageLogoResolution').value || '').trim();
-			if (!logoUrl) {
-				alert('Please enter a logo URL');
+			const sizeStr = (document.getElementById('pageLogoSize').value || '').trim();
+
+			if (!logoUrl && !resolution && !sizeStr) {
+				alert('Please enter at least one field: URL, Resolution, or Size');
 				return;
 			}
 
@@ -3046,17 +3062,32 @@
 				alert('Resolution must be in the format 1920x1080');
 				return;
 			}
+			// Optional: basic validation of size (WxH)
+			if (sizeStr && !/^\d{2,5}x\d{2,5}$/i.test(sizeStr)) {
+				alert('Size must be in the format 135x135');
+				return;
+			}
 
 			// Save GLOBALLY for ALL users
-			await saveGlobalSetting('pageLogo', logoUrl);
+			if (logoUrl) {
+				await saveGlobalSetting('pageLogo', logoUrl);
+			}
 			if (resolution) {
 				await saveGlobalSetting('pageLogoResolution', resolution);
+			}
+			if (sizeStr) {
+				await saveGlobalSetting('pageLogoSize', sizeStr);
 			}
 			
 			// Update logo immediately
 			const logoElement = document.getElementById('pageLogoImg');
-			if (logoElement) {
+			if (logoElement && logoUrl) {
 				logoElement.src = logoUrl;
+			}
+			if (sizeStr) {
+				const [w, h] = sizeStr.toLowerCase().split('x');
+				const logoBox = document.querySelector('.page-logo');
+				if (logoBox) { logoBox.style.width = w + 'px'; logoBox.style.height = h + 'px'; }
 			}
 			
 			// Update current settings display
@@ -3064,6 +3095,7 @@
 			document.getElementById('currentPageLogo').textContent = shortUrl;
 			document.getElementById('pageLogo').value = '';
 			document.getElementById('pageLogoResolution').value = '';
+			document.getElementById('pageLogoSize').value = '';
 			
 			alert('Page logo updated GLOBALLY! All visitors will see this change.');
 		}
