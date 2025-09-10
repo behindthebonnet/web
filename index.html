@@ -2085,6 +2085,8 @@
 		let adminUser = null;
 		const GOOGLE_CLIENT_ID = '1012238246699-5fknt3dtu6gbo42j5fvdonqsct81tfbp.apps.googleusercontent.com';
 		const AUTHORIZED_EMAIL = 'amberrpann@gmail.com';
+		// Collaborators list (hoisted early to avoid TDZ)
+		let collaborators = [];
 
 		function openAdminLogin() {
 			console.log('🔧 Admin button clicked!');
@@ -3633,7 +3635,6 @@
 		}
 
 		// ===== Collaborators helpers =====
-		let collaborators = [];
 		async function loadCollaborators() {
 			try {
 				const val = await loadGlobalSetting('collaborators');
