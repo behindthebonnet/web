@@ -2035,33 +2035,55 @@
 
 		// Initialize Google Sign-In when the page loads
 		window.onload = async function() {
+			console.log('🔑 Initializing OAuth system...');
+			
 			// Check for existing valid session first
 			checkExistingSession();
 			
-			// Now we have a valid Google Client ID, so use proper Google OAuth
-			if (typeof google !== 'undefined' && google.accounts) {
-				google.accounts.id.initialize({
-					client_id: GOOGLE_CLIENT_ID,
-					callback: handleCredentialResponse
-				});
+			// Wait a bit for Google API to fully load
+			setTimeout(() => {
+				console.log('🔍 Checking Google API availability...');
+				console.log('Google object exists:', typeof google !== 'undefined');
+				console.log('Google accounts exists:', typeof google !== 'undefined' && google.accounts);
+				
+				// Now we have a valid Google Client ID, so use proper Google OAuth
+				if (typeof google !== 'undefined' && google.accounts) {
+					console.log('✅ Google API loaded successfully, initializing OAuth...');
+					
+					try {
+						google.accounts.id.initialize({
+							client_id: GOOGLE_CLIENT_ID,
+							callback: handleCredentialResponse,
+							auto_select: false,
+							cancel_on_tap_outside: false
+						});
 
-				google.accounts.id.renderButton(
-					document.getElementById("googleSignIn"),
-					{ 
-						theme: "outline", 
-						size: "large",
-						text: "sign_in_with",
-						width: 250
+						console.log('✅ Google OAuth initialized successfully');
+
+						const signInElement = document.getElementById("googleSignIn");
+						if (signInElement) {
+							google.accounts.id.renderButton(
+								signInElement,
+								{ 
+									theme: "outline", 
+									size: "large",
+									text: "sign_in_with",
+									width: 250
+								}
+							);
+							console.log('✅ Google Sign-In button rendered');
+						} else {
+							console.error('❌ Google Sign-In element not found');
+						}
+					} catch (error) {
+						console.error('❌ Error initializing Google OAuth:', error);
+						setupFallbackAuth();
 					}
-				);
-			} else {
-				// Fallback for when Google API isn't loaded
-				document.getElementById("googleSignIn").onclick = fallbackGoogleSignIn;
-				document.getElementById("googleSignIn").innerHTML = `
-					<img src="https://developers.google.com/identity/images/g-logo.png" alt="Google"/>
-					Sign in with Google (Fallback)
-				`;
-			}
+				} else {
+					console.warn('⚠️ Google API not available, using fallback');
+					setupFallbackAuth();
+				}
+			}, 1000); // Wait 1 second for Google API to load
 			
 			// Load existing settings from Firebase/localStorage (now properly awaited)
 			try {
@@ -2071,6 +2093,28 @@
 				console.error('❌ Error loading settings:', error);
 			}
 		};
+
+		function setupFallbackAuth() {
+			console.log('🔄 Setting up fallback authentication...');
+			const signInElement = document.getElementById("googleSignIn");
+			if (signInElement) {
+				signInElement.onclick = fallbackGoogleSignIn;
+				signInElement.innerHTML = `
+					<img src="https://developers.google.com/identity/images/g-logo.png" alt="Google" style="width: 20px; height: 20px; margin-right: 8px;"/>
+					Sign in with Google (Fallback)
+				`;
+				signInElement.style.display = 'flex';
+				signInElement.style.alignItems = 'center';
+				signInElement.style.justifyContent = 'center';
+				signInElement.style.padding = '10px 20px';
+				signInElement.style.border = '1px solid #dadce0';
+				signInElement.style.borderRadius = '4px';
+				signInElement.style.backgroundColor = '#fff';
+				signInElement.style.color = '#3c4043';
+				signInElement.style.cursor = 'pointer';
+				console.log('✅ Fallback auth button set up');
+			}
+		}
 
 		function checkExistingSession() {
 			const sessionData = sessionStorage.getItem('admin-session');
@@ -2106,18 +2150,45 @@
 		}
 
 		function fallbackGoogleSignIn() {
-			// Simple email verification for demonstration
-			const email = prompt("Enter your email for admin access:");
+			console.log('🔄 Attempting fallback Google Sign-In...');
+			
+			// For file:// protocol, show a message about domain restrictions
+			if (window.location.protocol === 'file:') {
+				const useDemo = confirm(`⚠️ OAuth Limitation Detected\n\nGoogle OAuth doesn't work with file:// protocol for security reasons.\n\nTo test OAuth:\n1. Host this file on a web server (localhost:8000, GitHub Pages, etc.)\n2. Add your domain to Google Cloud Console authorized origins\n\nWould you like to use demo admin access for testing?\n\nClick OK for demo access, Cancel to try manual email entry.`);
+				
+				if (useDemo) {
+					// Simulate successful admin login for testing
+					const simulatedUser = {
+						name: 'Admin (Demo)',
+						email: AUTHORIZED_EMAIL,
+						picture: 'https://via.placeholder.com/40'
+					};
+					
+					console.log('🔧 Using simulated admin login for testing');
+					adminUser = simulatedUser;
+					isAdminLoggedIn = true;
+					showLoginSuccess();
+					setTimeout(() => {
+						closeAdminPopup('adminLoginPopup');
+						openAdminLogin(); // This will now open the admin panel
+					}, 1000);
+					return;
+				}
+			}
+			
+			// Manual email verification for demonstration/testing
+			const email = prompt(`Enter your email for admin access:\n\nNote: Only ${AUTHORIZED_EMAIL} is authorized.\n\nIf OAuth isn't working, this might be due to:\n• Domain not authorized in Google Cloud Console\n• Missing HTTPS (required for OAuth)\n• CORS restrictions`);
+			
 			if (email === AUTHORIZED_EMAIL) {
-				adminUser = { email: email, name: "Admin User" };
+				adminUser = { email: email, name: "Admin User (Manual)" };
 				isAdminLoggedIn = true;
 				showLoginSuccess();
 				setTimeout(() => {
 					closeAdminPopup('adminLoginPopup');
 					openAdminLogin(); // This will now open the admin panel
 				}, 1000);
-			} else {
-				showLoginError("Unauthorized email address");
+			} else if (email) {
+				showLoginError(`Unauthorized email address.\n\nOnly ${AUTHORIZED_EMAIL} is authorized for admin access.`);
 			}
 		}
 
