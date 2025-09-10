@@ -1,11 +1,3458 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Behind the Bonnet</title>
-</head>
-<body>
-  <h1>Welcome to My Site</h1>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>ilyambr</title>
+	<link rel="icon" type="image/x-icon" href="https://ilyambr.me/favicon.ico">
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Space+Grotesk:wght@400;600&display=swap" rel="stylesheet">
+	<script src="https://accounts.google.com/gsi/client" async defer></script>
+	<!-- Firebase SDK -->
+	<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+	<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+	<style>
+		:root{
+			--bg-1:#0b0b12;
+			--bg-2:#0e0b1a;
+			--twitch:#3a3a3a;
+			--twitch-2:#777777;
+			--pink:#666666;
+			--cyan:#888888;
+			--glow:#9a9a9a;
+			--text:#e8e8f0;
+			--muted:#b8b8c7;
+			--card:#121226cc;
+			--glass:rgba(18,18,38,0.55);
+			--border:rgba(255,255,255,0.08);
+			--shadow:0 10px 40px rgba(0,0,0,0.65), inset 0 1px 0 rgba(255,255,255,0.04);
+			--radius:18px;
+			--radius-sm:12px;
+		}
 
-  <!-- This is the hidden saying "Behind the Bonnet" -->
+		*{box-sizing:border-box; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;}
+		html,body{height:100%}
+		html{-webkit-filter:grayscale(100%); filter:grayscale(100%)}
+		body{
+			margin:0;
+			font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,'Helvetica Neue',Arial,'Noto Sans',sans-serif;
+			color:var(--text);
+			background: #1a1a2e;
+			overflow-x:hidden;
+		}
+
+		/* Simple loading screen - no backdrop-filter to prevent blur conflicts */
+		.loading-overlay {
+			position: fixed;
+			top: 0;
+			left: 0;
+			right: 0;
+			bottom: 0;
+			background: rgba(26, 26, 46, 0.95);
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			z-index: 9999;
+			opacity: 1;
+			transition: opacity 0.6s ease-out;
+		}
+		
+		.loading-overlay.hide {
+			opacity: 0;
+			pointer-events: none;
+		}
+		
+		.loading-spinner {
+			width: 50px;
+			height: 50px;
+			border: 3px solid rgba(255, 255, 255, 0.1);
+			border-top: 3px solid rgba(145, 70, 255, 0.8);
+			border-radius: 50%;
+			animation: spin 1s linear infinite;
+		}
+		
+		@keyframes spin {
+			0% { transform: rotate(0deg); }
+			100% { transform: rotate(360deg); }
+		}
+
+		.aurora{
+			position:fixed; inset:-20% -20% auto -20%; height:120%;
+			background:
+				conic-gradient(from 120deg at 60% 40%, rgba(200,200,200,0.28), rgba(140,140,140,0.20), rgba(100,100,100,0.22), rgba(200,200,200,0.28));
+			filter:blur(70px) saturate(140%);
+			opacity:0.45;
+			animation:drift 18s ease-in-out infinite alternate;
+			pointer-events:none;
+			z-index:0;
+		}
+		.bg-glass{position:fixed; inset:0; z-index:0; pointer-events:none; background:rgba(10,10,15,0.18); backdrop-filter: blur(10px) saturate(115%); -webkit-backdrop-filter: blur(10px) saturate(115%)}
+		@keyframes drift{
+			0%{transform:translate3d(-3%, -2%, 0) rotate(0deg) scale(1)}
+			100%{transform:translate3d(3%, 2%, 0) rotate(4deg) scale(1.05)}
+		}
+
+		.container{
+			position:relative;
+			z-index:1;
+			max-width:1100px;
+			margin:40px auto 80px;
+			padding:0 20px;
+		}
+
+		.header{
+			display:grid;
+			grid-template-columns:120px 1fr auto;
+			gap:22px;
+			align-items:center;
+			background:linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02)) , var(--glass);
+			border:1px solid var(--border);
+			box-shadow:var(--shadow), 0 0 0 1px rgba(145,70,255,0.06) inset, 0 0 80px rgba(145,70,255,0.12);
+			backdrop-filter: blur(12px) saturate(130%);
+			border-radius:calc(var(--radius) + 4px);
+			padding:22px;
+			position:relative;
+			overflow:hidden;
+		}
+		.page-logo{
+			position:fixed;
+			top:2px;
+			left:60px;
+			width:135px;
+			height:135px;
+			z-index:1000;
+		}
+		.page-logo img{
+			width:100%;
+			height:100%;
+			object-fit:contain;
+			border-radius:6px;
+			filter:invert(1);
+		}
+		.social-bar{
+			position:fixed;
+			top:57px;
+			right:54px;
+			display:flex;
+			gap:8px;
+			z-index:1000;
+			list-style:none;
+			margin:0;
+			padding:0;
+		}
+		.social-link{
+			width:24px;
+			height:24px;
+			display:flex;
+			align-items:center;
+			justify-content:center;
+			background:rgba(255,255,255,0.1);
+			border-radius:6px;
+			transition:all 0.2s ease;
+			text-decoration:none;
+		}
+		.social-link:hover{
+			background:rgba(255,255,255,0.2);
+			transform:translateY(-1px);
+		}
+		.social-link img{
+			width:14px;
+			height:14px;
+			object-fit:cover;
+			border-radius:2px;
+			filter:invert(1);
+		}
+		.header:before{
+			content:"";
+			position:absolute; inset:0;
+			background:radial-gradient(600px 120px at 30% -40%, rgba(180,180,180,0.18), transparent 60%),
+						radial-gradient(500px 100px at 85% 0%, rgba(120,120,120,0.14), transparent 60%);
+			pointer-events:none;
+		}
+
+		.avatar{
+			width:120px; height:120px; border-radius:22%;
+			border:1px solid rgba(255,255,255,0.14);
+			background:
+				radial-gradient(circle at 30% 30%, rgba(255,255,255,0.18), transparent 40%),
+				linear-gradient(135deg, rgba(130,130,130,0.35), rgba(80,80,80,0.25));
+			box-shadow:
+				0 12px 40px rgba(0,0,0,0.45),
+				0 0 0 6px rgba(120,120,120,0.08),
+				0 0 0 1px rgba(255,255,255,0.10) inset;
+			display:grid; place-items:center; overflow:hidden;
+			opacity: 0; /* Initially hidden to prevent flickering */
+			transition: opacity 0.3s ease-in-out;
+		}
+		.avatar.loaded {
+			opacity: 1; /* Show once loaded */
+		}
+		.avatar img{width:100%; height:100%; object-fit:cover; display:block}
+		.badges{
+			display:flex; gap:10px; margin-top:10px; flex-wrap:wrap;
+		}
+		.badge{
+			font-size:12px; padding:6px 10px; border-radius:999px; color:white;
+			background:linear-gradient(90deg, var(--twitch), var(--twitch-2));
+			box-shadow:0 6px 20px rgba(145,70,255,0.35), 0 0 0 1px rgba(255,255,255,0.1) inset;
+			border:1px solid rgba(255,255,255,0.12);
+			letter-spacing:0.2px;
+		}
+
+		.title{
+			display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+		}
+		.name{
+			font-family:"Space Grotesk",Inter,sans-serif;
+			font-size:32px; font-weight:800; letter-spacing:0.3px;
+			text-shadow:0 0 30px rgba(145,70,255,0.35);
+		}
+		.username{color:var(--muted); font-weight:600}
+		.bio{color:var(--muted); margin-top:6px; line-height:1.5}
+		.stats{
+			display:flex; gap:18px; margin-top:14px; flex-wrap:wrap;
+			color:#dcdcf3;
+		}
+		.stat{
+			background:rgba(255,255,255,0.05);
+			border:1px solid var(--border);
+			border-radius:999px; padding:8px 12px;
+			box-shadow:inset 0 0 24px rgba(145,70,255,0.09), 0 8px 24px rgba(0,0,0,0.25);
+			display:inline-flex; align-items:center; gap:8px;
+		}
+		.stat svg{width:16px; height:16px; display:block}
+		.stat img{width:16px; height:16px; display:block; object-fit:contain; filter:invert(1) grayscale(1) brightness(1.4) contrast(1.6)}
+
+		.actions{
+			display:flex; gap:12px; flex-wrap:wrap; justify-self:end;
+		}
+		.button{
+			--c1:var(--twitch); --c2:var(--twitch-2);
+			position:relative;
+			display:inline-flex; align-items:center; gap:10px;
+			padding:12px 16px; border-radius:12px; border:1px solid rgba(255,255,255,0.12);
+			color:#fff; text-decoration:none; font-weight:700;
+			background:linear-gradient(90deg, var(--c1), var(--c2));
+			box-shadow:0 10px 34px rgba(145,70,255,0.35), 0 0 0 1px rgba(255,255,255,0.08) inset;
+			transition:transform .15s ease, box-shadow .2s ease, filter .2s ease;
+		}
+		.button.secondary{
+			--c1:rgba(255,255,255,0.08); --c2:rgba(255,255,255,0.08);
+			color:#e9e9ff;
+			backdrop-filter: blur(6px);
+			box-shadow:0 10px 30px rgba(0,0,0,0.35), inset 0 0 0 1px rgba(255,255,255,0.08);
+		}
+		.button:hover{transform:translateY(-1px); filter:saturate(1.1)}
+		.button:active{transform:translateY(0)}
+		.button svg{width:18px; height:18px; filter:drop-shadow(0 4px 12px rgba(0,0,0,0.35))}
+
+		.grid{
+			display:grid; gap:20px; margin-top:22px;
+			grid-template-columns:2fr 1fr;
+		}
+
+		.card{
+			background:linear-gradient(180deg, rgba(255,255,255,0.045), rgba(255,255,255,0.015)), var(--card);
+			border:1px solid var(--border);
+			box-shadow:var(--shadow), 0 0 80px rgba(86,224,255,0.08);
+			backdrop-filter: blur(10px) saturate(140%);
+			border-radius:var(--radius);
+			padding:18px;
+		}
+		.card h3{
+			margin:2px 0 14px;
+			font-family:"Space Grotesk",Inter,sans-serif;
+			letter-spacing:0.3px;
+		}
+
+		.gallery{display:grid; grid-template-columns:1fr; gap:14px}
+		.thumb{
+			position:relative; border-radius:var(--radius-sm); overflow:hidden; aspect-ratio:16/9;
+			background:
+				radial-gradient(120% 120% at 10% 0%, rgba(180,180,180,0.28), transparent 60%),
+				linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02));
+			border:1px solid rgba(255,255,255,0.1);
+			box-shadow:inset 0 0 0 1px rgba(255,255,255,0.06), 0 20px 50px rgba(0,0,0,0.4);
+			display:grid; place-items:center;
+			color:#fff; font-weight:800; letter-spacing:0.5px;
+		}
+		.thumb #twitch-embed{width:100%; height:100%; visibility:visible}
+		.thumb .embed-container{width:100%; height:100%; position:absolute; top:0; left:0}
+		.thumb:after{
+			content:"LIVE";
+			position:absolute; top:10px; right:10px;
+			background:linear-gradient(90deg, #3a3a3a, #7a7a7a);
+			padding:4px 8px; border-radius:999px; font-size:12px;
+			border:1px solid rgba(255,255,255,0.15);
+			box-shadow:0 10px 24px rgba(255,59,107,0.35);
+		}
+		.thumb.hide-live:after{
+			display:none;
+		}
+
+		.about{
+			line-height:1.8; color:#d9d9f2; font-weight:400;
+		}
+		.about strong{color:#fff}
+		.discord-link{display:flex; align-items:center; justify-content:center; gap:10px; width:100%; margin-top:12px; text-decoration:none; color:#ffffff; background:linear-gradient(90deg, #5865F2, #8a95ff); border:1px solid rgba(255,255,255,0.12); padding:12px 14px; border-radius:12px; font-weight:700; transition:transform .15s ease, box-shadow .2s ease, filter .2s ease;}
+		.discord-link:hover{transform:translateY(-1px); filter:saturate(1.1)}
+		.discord-link:active{transform:translateY(0)}
+		.discord-link svg{width:20px; height:20px; display:block; color:#ffffff}
+		.discord-link img{width:20px; height:20px; display:block; object-fit:contain; background:transparent; filter:invert(1) grayscale(1) brightness(1.6) contrast(1.8); mix-blend-mode:screen}
+		
+		.stream-header{display:flex; align-items:center; justify-content:space-between; margin-bottom:16px}
+		.stream-switcher{display:flex; background:rgba(255,255,255,0.08); border-radius:8px; padding:2px; gap:2px}
+		.stream-switch{background:transparent; border:none; color:var(--muted); padding:6px 12px; border-radius:6px; cursor:pointer; font-size:12px; font-weight:600; transition:all .2s ease}
+		.stream-switch.active{background:rgba(255,255,255,0.12); color:var(--text)}
+		.stream-switch:hover{background:rgba(255,255,255,0.06); color:var(--text)}
+		
+		.embed-container{position:relative; width:100%; height:100%}
+		.embed-frame{width:100%; height:100%; border:0}
+		.embed-frame.hidden{display:none !important;}
+		.tags{margin-top:12px; display:flex; flex-wrap:wrap; gap:10px}
+		.tag{
+			padding:6px 10px; border-radius:999px; font-size:12px;
+			background:rgba(255,255,255,0.06);
+			border:1px solid rgba(255,255,255,0.1);
+			color:#ededff;
+		}
+
+		.schedule{display:grid; gap:10px}
+		.slot{
+			display:flex; justify-content:space-between; align-items:center;
+			padding:12px; border-radius:12px;
+			background:rgba(255,255,255,0.04);
+			border:1px solid rgba(255,255,255,0.08);
+			box-shadow:inset 0 0 0 1px rgba(255,255,255,0.04);
+		}
+		.slot .day{font-weight:700}
+		.slot .time{color:var(--muted)}
+
+		.footer{
+			margin-top:20px; text-align:center; color:var(--muted); font-size:13px; position:relative; z-index:2;
+		}
+		#counter{position:relative; z-index:2}
+
+		/* Popup Styles */
+		.popup-overlay {
+			position: fixed;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			background: rgba(0, 0, 0, 0.8);
+			backdrop-filter: blur(8px);
+			-webkit-backdrop-filter: blur(8px);
+			display: none;
+			justify-content: center;
+			align-items: center;
+			z-index: 1000;
+		}
+
+		.popup-content {
+			background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03)), var(--card);
+			border: 1px solid var(--border);
+			box-shadow: var(--shadow), 0 0 100px rgba(145,70,255,0.15);
+			backdrop-filter: blur(15px) saturate(150%);
+			border-radius: calc(var(--radius) + 4px);
+			min-width: 400px;
+			max-width: 90vw;
+			animation: popupSlideIn 0.3s ease-out;
+		}
+
+		.popup-header {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			padding: 20px 24px 16px;
+			border-bottom: 1px solid var(--border);
+		}
+
+		.popup-header h3 {
+			margin: 0;
+			font-family: "Space Grotesk", Inter, sans-serif;
+			font-size: 20px;
+			font-weight: 700;
+			color: var(--text);
+		}
+
+		.close-btn {
+			background: none;
+			border: none;
+			color: var(--muted);
+			font-size: 24px;
+			cursor: pointer;
+			padding: 0;
+			width: 32px;
+			height: 32px;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			border-radius: 8px;
+			transition: background-color 0.2s ease, color 0.2s ease;
+		}
+
+		.close-btn:hover {
+			background-color: rgba(255, 255, 255, 0.1);
+			color: var(--text);
+		}
+
+		.popup-body {
+			padding: 20px 24px 24px;
+		}
+
+		.popup-body p {
+			margin: 0 0 20px;
+			color: var(--muted);
+			font-size: 16px;
+		}
+
+		.popup-buttons {
+			display: flex;
+			flex-direction: column;
+			gap: 12px;
+		}
+
+		.popup-button {
+			display: flex;
+			align-items: center;
+			justify-content: flex-start;
+			gap: 16px;
+			padding: 0 20px;
+			border-radius: 12px;
+			text-decoration: none;
+			color: white;
+			font-weight: 600;
+			font-size: 15px;
+			border: 1px solid rgba(255, 255, 255, 0.12);
+			transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+			position: relative;
+			overflow: hidden;
+			height: 58px;
+			box-sizing: border-box;
+		}
+
+		.popup-button:hover {
+			transform: translateY(-2px);
+			filter: saturate(1.2);
+		}
+
+		.popup-button:active {
+			transform: translateY(0);
+		}
+
+		.popup-button img {
+			width: 24px;
+			height: 24px;
+			object-fit: contain;
+			filter: invert(1) brightness(1.2) contrast(1.2);
+			flex-shrink: 0;
+		}
+
+		.popup-button.tiktok img {
+			width: 38px;
+			height: 38px;
+			flex-shrink: 0;
+			margin-left: -7px;
+			margin-right: -7px;
+		}
+
+		.popup-button.guns img {
+			filter: brightness(1.2) contrast(1.2);
+		}
+
+		.popup-button.kofi img {
+			filter: brightness(1.2) contrast(1.2);
+		}
+
+		.popup-button.twitch {
+			background: linear-gradient(135deg, #9146FF, #7A39E0);
+			box-shadow: 0 8px 24px rgba(145, 70, 255, 0.4);
+		}
+
+		.popup-button.youtube {
+			background: linear-gradient(135deg, #9146FF, #7A39E0);
+			box-shadow: 0 8px 24px rgba(145, 70, 255, 0.4);
+		}
+
+		.popup-button.twitter {
+			background: linear-gradient(135deg, #1DA1F2, #1A8CD8);
+			box-shadow: 0 8px 24px rgba(29, 161, 242, 0.4);
+		}
+
+		.popup-button.instagram {
+			background: linear-gradient(135deg, #E4405F, #CA3A55);
+			box-shadow: 0 8px 24px rgba(228, 64, 95, 0.4);
+		}
+
+		.popup-button.tiktok {
+			background: linear-gradient(135deg, #9146FF, #7A39E0);
+			box-shadow: 0 8px 24px rgba(145, 70, 255, 0.4);
+		}
+
+		.popup-button.guns {
+			background: linear-gradient(135deg, #6B46C1, #5B3DA6);
+			box-shadow: 0 8px 24px rgba(107, 70, 193, 0.4);
+		}
+
+		.popup-button.kofi {
+			background: linear-gradient(135deg, #9146FF, #7A39E0);
+			box-shadow: 0 8px 24px rgba(145, 70, 255, 0.4);
+		}
+
+		.popup-button.guns {
+			background: linear-gradient(135deg, #6b46c1, #9333ea);
+			box-shadow: 0 8px 24px rgba(147, 51, 234, 0.4);
+		}
+
+		@keyframes popupSlideIn {
+			from {
+				opacity: 0;
+				transform: scale(0.9);
+			}
+			to {
+				opacity: 1;
+				transform: scale(1);
+			}
+		}
+
+		/* Responsive popup styles */
+		@media (max-width: 640px) {
+			.popup-content {
+				min-width: 320px;
+				margin: 20px;
+			}
+			
+			.popup-buttons {
+				gap: 10px;
+			}
+			
+			.popup-button {
+				padding: 14px 16px;
+				font-size: 14px;
+			}
+		}
+
+		/* Admin Console Styles */
+		.admin-button {
+			position: fixed;
+			bottom: 20px;
+			right: 20px;
+			width: 50px;
+			height: 50px;
+			background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05));
+			border: 1px solid var(--border);
+			border-radius: 50%;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			cursor: pointer;
+			backdrop-filter: blur(10px);
+			box-shadow: var(--shadow);
+			transition: all 0.3s ease;
+			z-index: 999;
+		}
+
+		.admin-button:hover {
+			transform: scale(1.1);
+			background: linear-gradient(135deg, rgba(255,255,255,0.15), rgba(255,255,255,0.08));
+		}
+
+		.admin-button svg {
+			width: 20px;
+			height: 20px;
+			color: var(--text);
+		}
+
+		.admin-popup {
+			min-width: 500px;
+		}
+
+		.admin-panel {
+			min-width: 600px;
+			max-width: 800px;
+		}
+
+		.admin-panel-body {
+			max-height: 70vh;
+			overflow-y: auto;
+		}
+
+		.admin-user-info {
+			display: flex;
+			align-items: center;
+			gap: 15px;
+			font-size: 14px;
+			color: var(--muted);
+		}
+
+		.admin-logout-btn {
+			background: rgba(255, 59, 107, 0.2);
+			border: 1px solid rgba(255, 59, 107, 0.3);
+			color: #ff6b9d;
+			padding: 4px 12px;
+			border-radius: 6px;
+			font-size: 12px;
+			cursor: pointer;
+			transition: all 0.2s ease;
+		}
+
+		.admin-logout-btn:hover {
+			background: rgba(255, 59, 107, 0.3);
+		}
+
+		.google-signin-container {
+			display: flex;
+			justify-content: center;
+			margin: 20px 0;
+		}
+
+		.google-signin-btn {
+			display: flex;
+			align-items: center;
+			gap: 12px;
+			padding: 12px 24px;
+			background: white;
+			color: #333;
+			border: 1px solid #ddd;
+			border-radius: 8px;
+			font-size: 16px;
+			font-weight: 500;
+			cursor: pointer;
+			transition: all 0.2s ease;
+		}
+
+		.google-signin-btn:hover {
+			background: #f8f8f8;
+			box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+		}
+
+		.google-signin-btn img {
+			width: 20px;
+			height: 20px;
+		}
+
+		.login-status {
+			text-align: center;
+			margin-top: 15px;
+			padding: 10px;
+			border-radius: 6px;
+			font-size: 14px;
+		}
+
+		.login-status.success {
+			background: rgba(0, 255, 0, 0.1);
+			color: #00ff00;
+			border: 1px solid rgba(0, 255, 0, 0.3);
+		}
+
+		.login-status.error {
+			background: rgba(255, 0, 0, 0.1);
+			color: #ff6b6b;
+			border: 1px solid rgba(255, 0, 0, 0.3);
+		}
+
+		.admin-section {
+			margin-bottom: 30px;
+			padding: 20px;
+			background: rgba(255,255,255,0.03);
+			border: 1px solid var(--border);
+			border-radius: 12px;
+		}
+
+		.admin-section h4 {
+			margin: 0 0 15px 0;
+			color: var(--text);
+			font-size: 16px;
+			font-weight: 600;
+		}
+
+		.admin-setting {
+			display: flex;
+			flex-direction: column;
+			gap: 8px;
+		}
+
+		.admin-setting label {
+			font-size: 14px;
+			font-weight: 500;
+			color: var(--text);
+		}
+
+		.admin-setting input {
+			padding: 10px 14px;
+			background: rgba(255,255,255,0.05);
+			border: 1px solid var(--border);
+			border-radius: 8px;
+			color: var(--text);
+			font-size: 14px;
+		}
+
+		.admin-setting input:focus {
+			outline: none;
+			border-color: rgba(145, 70, 255, 0.5);
+			box-shadow: 0 0 0 2px rgba(145, 70, 255, 0.1);
+		}
+
+		.admin-setting select {
+			padding: 10px 14px;
+			background: rgba(255,255,255,0.05);
+			border: 1px solid var(--border);
+			border-radius: 8px;
+			color: var(--text);
+			font-size: 14px;
+			cursor: pointer;
+		}
+
+		.admin-setting select:focus {
+			outline: none;
+			border-color: rgba(145, 70, 255, 0.5);
+			box-shadow: 0 0 0 2px rgba(145, 70, 255, 0.1);
+		}
+
+		.admin-setting button {
+			padding: 10px 20px;
+			background: linear-gradient(90deg, var(--twitch), var(--twitch-2));
+			border: 1px solid rgba(255,255,255,0.12);
+			border-radius: 8px;
+			color: white;
+			font-size: 14px;
+			font-weight: 600;
+			cursor: pointer;
+			transition: all 0.2s ease;
+			align-self: flex-start;
+		}
+
+		.admin-setting button:hover {
+			transform: translateY(-1px);
+			filter: saturate(1.1);
+		}
+
+		.admin-setting small {
+			color: var(--muted);
+			font-size: 12px;
+			margin-top: -4px;
+		}
+
+		.current-settings {
+			padding: 15px;
+			background: rgba(255,255,255,0.02);
+			border-radius: 8px;
+		}
+
+		.current-settings p {
+			margin: 8px 0;
+			font-size: 14px;
+			color: var(--muted);
+		}
+
+		.current-settings strong {
+			color: var(--text);
+		}
+
+		/* Responsive */
+		@media (max-width: 980px){
+			.grid{grid-template-columns:1fr 1fr}
+			.gallery{grid-template-columns:1fr}
+		}
+		@media (max-width: 640px){
+			.grid{grid-template-columns:1fr}
+			.header{grid-template-columns:80px 1fr; padding:16px}
+			.avatar{width:80px; height:80px}
+			.actions{grid-column:1 / -1; justify-self:start}
+			.name{font-size:24px}
+			.gallery{grid-template-columns:1fr}
+		}
+
+		/* Mobile and Tablet: Header scrolls with page, not fixed */
+		@media (max-width: 1200px) { /* Changed from 980px to include landscape tablets */
+			.container {
+				margin-top: 100px; /* Create space for logo and social bar */
+				padding-top: 20px;
+			}
+			
+			.page-logo {
+				position: absolute; /* Change from fixed to absolute so it scrolls */
+				width: 100px; /* Bigger logo */
+				height: 100px;
+				top: 10px;
+				left: 20px; /* Keep it on the left like desktop */
+			}
+			
+			.social-bar {
+				position: absolute; /* Change from fixed to absolute so it scrolls */
+				top: 50px; /* Align with middle of logo (10px + 100px/2 - social bar height/2) */
+				right: 20px; /* Keep it on the right like desktop */
+				left: auto;
+				gap: 6px;
+			}
+			
+			.social-link {
+				width: 20px;
+				height: 20px;
+			}
+		}
+
+		@media (max-width: 640px) {
+			.container {
+				margin-top: 80px; /* Smaller space on phone */
+				padding-top: 15px;
+			}
+			
+			.page-logo {
+				position: absolute; /* Change from fixed to absolute so it scrolls */
+				width: 80px; /* Bigger on mobile too */
+				height: 80px;
+				left: 15px;
+			}
+			
+			.social-bar {
+				position: absolute; /* Change from fixed to absolute so it scrolls */
+				top: 40px; /* Align with middle of smaller logo */
+				right: 15px;
+			}
+			
+			.social-link {
+				width: 18px;
+				height: 18px;
+			}
+		}
+
+		/* Hide elements until database loads */
+		.db-loading .name,
+		.db-loading .bio,
+		.db-loading .username,
+		.db-loading .handle,
+		.db-loading .user-handle,
+		.db-loading .about,
+		.db-loading .stat,
+		.db-loading .badge,
+		.db-loading .page-logo,
+		.db-loading .social-bar,
+		.db-loading .button,
+		.db-loading .schedule .slot {
+			opacity: 0.3;
+			pointer-events: none;
+		}
+
+		.db-loaded .name,
+		.db-loaded .bio,
+		.db-loaded .username,
+		.db-loaded .handle,
+		.db-loaded .user-handle,
+		.db-loaded .about,
+		.db-loaded .stat,
+		.db-loaded .badge,
+		.db-loaded .page-logo,
+		.db-loaded .social-bar,
+		.db-loaded .button,
+		.db-loaded .schedule .slot {
+			opacity: 1;
+			pointer-events: auto;
+			transition: opacity 0.5s ease;
+		}
+
+		/* Website Effects */
+		.effect-color {
+			filter: hue-rotate(45deg) saturate(1.5);
+		}
+		
+		.effect-grayscale {
+			filter: grayscale(100%);
+		}
+		
+		.effect-sepia {
+			filter: sepia(70%);
+		}
+		
+		.effect-invert {
+			filter: invert(1);
+		}
+		
+		.effect-brightness {
+			filter: brightness(1.3);
+		}
+		
+		.effect-blur-bg {
+			backdrop-filter: blur(8px);
+		}
+		
+		.effect-blur-bg .container {
+			background: rgba(0, 0, 0, 0.2);
+			backdrop-filter: blur(10px);
+		}
+		
+		/* Combined effects support */
+		.effect-color.effect-grayscale {
+			filter: hue-rotate(45deg) saturate(1.5) grayscale(100%);
+		}
+		
+		.effect-color.effect-sepia {
+			filter: hue-rotate(45deg) saturate(1.5) sepia(70%);
+		}
+		
+		.effect-grayscale.effect-sepia {
+			filter: grayscale(100%) sepia(70%);
+		}
+		
+		.effect-color.effect-brightness {
+			filter: hue-rotate(45deg) saturate(1.5) brightness(1.3);
+		}
+		
+		.effect-grayscale.effect-brightness {
+			filter: grayscale(100%) brightness(1.3);
+		}
+		
+		.effect-sepia.effect-brightness {
+			filter: sepia(70%) brightness(1.3);
+		}
+		
+		.effect-invert.effect-color {
+			filter: invert(1) hue-rotate(45deg) saturate(1.5);
+		}
+		
+		.effect-invert.effect-grayscale {
+			filter: invert(1) grayscale(100%);
+		}
+		
+		.effect-invert.effect-sepia {
+			filter: invert(1) sepia(70%);
+		}
+		
+		.effect-invert.effect-brightness {
+			filter: invert(1) brightness(1.3);
+		}
+		
+		/* Triple+ effect combinations */
+		.effect-color.effect-grayscale.effect-brightness {
+			filter: hue-rotate(45deg) saturate(1.5) grayscale(100%) brightness(1.3);
+		}
+		
+		.effect-color.effect-sepia.effect-brightness {
+			filter: hue-rotate(45deg) saturate(1.5) sepia(70%) brightness(1.3);
+		}
+		
+		.effect-grayscale.effect-sepia.effect-brightness {
+			filter: grayscale(100%) sepia(70%) brightness(1.3);
+		}
+	</style>
+</head>
+<body class="db-loading">
+	<!-- Simple loading screen -->
+	<div class="loading-overlay" id="loadingOverlay">
+		<div class="loading-spinner"></div>
+	</div>
+
+	<div class="page-logo">
+		<img id="pageLogoImg" src="https://ilyambr.me/Screenshot_2025-02-06_010238_edited_edited.png" alt="Logo" />
+	</div>
+	
+	<ul class="social-bar" aria-label="Social Bar">
+		<li><a id="twitchSocialLink" href="https://www.twitch.tv/ilyambrr" target="_blank" rel="noreferrer noopener" class="social-link" aria-label="Twitch">
+			<img alt="Twitch" src="https://static.wixstatic.com/media/11062b_33ebef7d3c404a0baa46a0ec8b83cd51~mv2.png/v1/fill/w_20,h_20,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/11062b_33ebef7d3c404a0baa46a0ec8b83cd51~mv2.png">
+		</a></li>
+		<li><a id="youtubeSocialLink" href="https://www.youtube.com/@ilyambr" target="_blank" rel="noreferrer noopener" class="social-link" aria-label="Youtube">
+			<img alt="Youtube" src="https://static.wixstatic.com/media/11062b_30de4e7217e64dfdadc3ea03beea7b94~mv2.png/v1/fill/w_20,h_20,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/11062b_30de4e7217e64dfdadc3ea03beea7b94~mv2.png">
+		</a></li>
+		<li><a id="tiktokSocialLink" href="https://www.tiktok.com/@ilyambr_" target="_blank" rel="noreferrer noopener" class="social-link" aria-label="TikTok">
+			<img alt="TikTok" src="https://static.wixstatic.com/media/11062b_7fc95bac711041dcb9691b6a09192a84~mv2.png/v1/fill/w_20,h_20,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/11062b_7fc95bac711041dcb9691b6a09192a84~mv2.png">
+		</a></li>
+		<li><a id="discordSocialLink" href="https://discord.gg/EK4nvAJPzc" target="_blank" rel="noreferrer noopener" class="social-link discord-social-link" aria-label="Discord">
+			<img alt="Discord" src="https://static.wixstatic.com/media/11062b_f642c87820384bd6b2a7c95d10b73a22~mv2.png/v1/fill/w_20,h_20,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/11062b_f642c87820384bd6b2a7c95d10b73a22~mv2.png">
+		</a></li>
+		<li><a id="instagramSocialLink" href="https://www.instagram.com/ilyambr_/" target="_blank" rel="noreferrer noopener" class="social-link" aria-label="Instagram">
+			<img alt="Instagram" src="https://static.wixstatic.com/media/11062b_ca1d837ce7194421b781ee7384061a8e~mv2.png/v1/fill/w_20,h_20,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/11062b_ca1d837ce7194421b781ee7384061a8e~mv2.png">
+		</a></li>
+		<li><a id="xSocialLink" href="https://x.com/ilyambrr" target="_blank" rel="noreferrer noopener" class="social-link" aria-label="X">
+			<img alt="X" src="https://static.wixstatic.com/media/11062b_bc7125385fcf422cad29fbe20a2b237c~mv2.png/v1/fill/w_20,h_20,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/11062b_bc7125385fcf422cad29fbe20a2b237c~mv2.png">
+		</a></li>
+		<li><a id="redditSocialLink" href="https://www.reddit.com/user/ilyambr/" target="_blank" rel="noreferrer noopener" class="social-link" aria-label="Reddit">
+			<img alt="Reddit" src="https://static.wixstatic.com/media/11062b_1b825ed041384249b8d50464cf9de627~mv2.png/v1/fill/w_20,h_20,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/11062b_1b825ed041384249b8d50464cf9de627~mv2.png">
+		</a></li>
+	</ul>
+	
+	<div class="aurora" aria-hidden="true"></div>
+	<div class="bg-glass" aria-hidden="true"></div>
+
+	<div class="container">
+		<header class="header">
+			<div class="avatar" aria-label="Avatar">
+				<img src="https://ilyambr.me/img/avatar.webp" alt="Profile avatar" />
+			</div>
+			<div>
+				<div class="title">
+					<div class="name">ilyambr</div>
+					<div class="username">@ilyambrr</div>
+				</div>
+				<div class="bio" id="bioText">just give me a year max.....</div>
+				<div class="badges">
+					<div class="badge twitch-status-badge" id="twitchStatusBadge" style="display: none;">Affiliate</div>
+				</div>
+				<div class="stats">
+					<div class="stat" id="twitchFollowersStat">
+						<img src="https://images.seeklogo.com/logo-png/27/2/twitch-logo-png_seeklogo-274042.png" alt="Twitch"/>
+						N/A followers
+					</div>
+					<div class="stat" id="youtubeSubscribersStat">
+						<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/09/YouTube_full-color_icon_%282017%29.svg/2560px-YouTube_full-color_icon_%282017%29.svg.png" alt="YouTube"/>
+						N/A subs
+					</div>
+					<div class="stat" id="streamingYearStat">Streaming since 2024</div>
+				</div>
+			</div>
+			<div class="actions">
+				<a class="button" id="followButton" href="javascript:void(0)" onclick="openPopup('followPopup')">
+					<svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+						<path d="M12 21s-8-4.5-8-11a5 5 0 0 1 9-3 5 5 0 0 1 9 3c0 6.5-10 11-10 11z" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+					</svg>
+					Follow
+				</a>
+				<a class="button secondary" id="subscribeButton" href="javascript:void(0)" onclick="openPopup('subscribePopup')">
+					<svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+						<path d="M4 12h16M12 4v16" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+					</svg>
+					Subscribe
+				</a>
+			</div>
+		</header>
+
+		<div class="grid">
+			<section class="card">
+				<div class="stream-header">
+					<h3>Recent Streams</h3>
+					<div class="stream-switcher">
+						<button class="stream-switch active" onclick="switchStream('twitch')">Twitch</button>
+						<button class="stream-switch" onclick="switchStream('youtube')">YouTube</button>
+					</div>
+				</div>
+				<div class="gallery">
+					<div class="thumb" style="background:
+						radial-gradient(140% 140% at 10% 0%, rgba(180,180,180,0.28), transparent 60%),
+						radial-gradient(140% 140% at 90% 100%, rgba(100,100,100,0.24), transparent 60%),
+						linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02));">
+						<div class="embed-container">
+							<iframe id="twitch-embed" class="embed-frame" src="https://player.twitch.tv/?channel=ilyambrr&parent=ilyambr.me" frameborder="0" allowfullscreen="true" scrolling="no"></iframe>
+							<iframe id="youtube-embed" class="embed-frame hidden" src="" frameborder="0" allowfullscreen></iframe>
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<aside class="card">
+				<h3>About</h3>
+				<div class="about" id="aboutSection">
+					<span id="aboutTextContent">i make stuff, i stream, that's it really. just trying to make and do stuff i enjoy. appreciate you for visiting my website, make sure to join the discord and watch the streams 🫶</span>
+					<a class="discord-link discord-about-link" href="https://ilyambr.me/discord" target="_blank" rel="noopener">
+						<img src="https://thumbnail.imgbin.com/2/21/7/discord-icon-blue-discord-logo-for-chatting-and-communication-RA6Qd2f8_t.jpg" alt="Discord"/>
+						Discord
+					</a>
+				</div>
+				<h3 style="margin-top:18px">Schedule</h3>
+				<div class="schedule">
+					<div class="slot">
+						<span class="day" id="saturdaySchedule">Saturday, 5:00PM</span>
+						<span class="time" id="nextSaturday">Loading...</span>
+					</div>
+					<div class="slot">
+						<span class="day" id="sundaySchedule">Sunday, 6:00PM</span>
+						<span class="time" id="nextSunday">Loading...</span>
+					</div>
+				</div>
+			</aside>
+		</div>
+
+		<div class="footer">
+			<div id="counter"></div>
+			© 2025 ilyambr, made with love <3
+		</div>
+	</div>
+
+	<!-- Admin Console Button -->
+	<div class="admin-button" onclick="openAdminLogin()">
+		<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+			<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
+			<circle cx="12" cy="12" r="3"/>
+		</svg>
+	</div>
+
+	<script>
+		// Twitch API Configuration
+		const twitchConfig = {
+			// Base64 encoded credentials for security
+			clientId: 'dzZyeWFhYmVkbGNtejJzMDJrNjV2NG9iaHA1bDQ3', // Get from https://dev.twitch.tv/console/apps (Base64 encoded)
+			clientSecret: 'eHRvOGZkdXAzNnhpa3JzeXo3cWtndGs4d2poZGJz', // Get from https://dev.twitch.tv/console/apps (Base64 encoded)
+			username: 'ilyambrr'
+		};
+
+		// Counter script - using localStorage for persistence
+		function updateCounter() {
+			// Get current count from localStorage or start at a base number
+			let count = localStorage.getItem('ilyambr-counter');
+			if (!count) {
+				// Start at a reasonable number since you had visitors before
+				count = 1247; // You can adjust this starting number
+			} else {
+				count = parseInt(count) + 1;
+			}
+			
+			// Save updated count
+			localStorage.setItem('ilyambr-counter', count);
+			
+			// Convert to 5-digit string with leading zeros
+			let countStr = count.toString();
+			while (countStr.length < 5) {
+				countStr = '0' + countStr;
+			}
+			
+			console.log('Counter:', countStr);
+			
+			// Generate HTML with GIF images
+			let html = '';
+			countStr.split('').forEach(d => {
+				html += '<img src="https://ilyambr.me/counter/' + d + '.gif" style="max-height: 120px;">';
+			});
+			
+			document.getElementById('counter').innerHTML = html;
+		}
+
+		// Schedule calculation functions
+		function getNextWeekdayDate(targetDay) {
+			const today = new Date();
+			const currentDay = today.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+			
+			let daysUntilTarget;
+			
+			if (targetDay === 6) { // Saturday
+				daysUntilTarget = (6 - currentDay + 7) % 7;
+				if (daysUntilTarget === 0) daysUntilTarget = 7; // If today is Saturday, get next Saturday
+			} else if (targetDay === 0) { // Sunday
+				daysUntilTarget = (7 - currentDay) % 7;
+				if (daysUntilTarget === 0) daysUntilTarget = 7; // If today is Sunday, get next Sunday
+			}
+			
+			const nextDate = new Date(today);
+			nextDate.setDate(today.getDate() + daysUntilTarget);
+			
+			return nextDate;
+		}
+
+		function formatScheduleDate(date) {
+			const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
+							'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+			
+			const month = months[date.getMonth()];
+			const day = date.getDate();
+			
+			// Add ordinal suffix (st, nd, rd, th)
+			let suffix = 'th';
+			if (day % 10 === 1 && day !== 11) suffix = 'st';
+			else if (day % 10 === 2 && day !== 12) suffix = 'nd';
+			else if (day % 10 === 3 && day !== 13) suffix = 'rd';
+			
+			return `${month} ${day}${suffix}`;
+		}
+
+		function updateScheduleDates() {
+			const nextSaturday = getNextWeekdayDate(6); // 6 = Saturday
+			const nextSunday = getNextWeekdayDate(0);   // 0 = Sunday
+			
+			document.getElementById('nextSaturday').textContent = formatScheduleDate(nextSaturday);
+			document.getElementById('nextSunday').textContent = formatScheduleDate(nextSunday);
+			
+			console.log('📅 Schedule updated:', {
+				saturday: formatScheduleDate(nextSaturday),
+				sunday: formatScheduleDate(nextSunday)
+			});
+		}
+
+		// Base64 utility functions
+		function base64Encode(str) {
+			return btoa(str);
+		}
+
+		function base64Decode(str) {
+			try {
+				return atob(str);
+			} catch (e) {
+				console.error('Base64 decode error:', e);
+				return null;
+			}
+		}
+
+		// Get decoded Twitch credentials
+		function getTwitchCredentials() {
+			const clientId = base64Decode(twitchConfig.clientId);
+			const clientSecret = base64Decode(twitchConfig.clientSecret);
+			
+			if (!clientId || !clientSecret || 
+				twitchConfig.clientId === 'YOUR_TWITCH_CLIENT_ID_BASE64' ||
+				twitchConfig.clientSecret === 'YOUR_TWITCH_CLIENT_SECRET_BASE64') {
+				return null;
+			}
+			
+			return { clientId, clientSecret };
+		}
+
+		// Twitch API Access Token Management
+		let twitchAccessToken = null;
+		let twitchTokenExpiry = null;
+
+		// Get Twitch App Access Token (Client Credentials Flow)
+		async function getTwitchAccessToken() {
+			try {
+				// Check if we have a valid token
+				if (twitchAccessToken && twitchTokenExpiry && Date.now() < twitchTokenExpiry) {
+					return twitchAccessToken;
+				}
+
+				const credentials = getTwitchCredentials();
+				if (!credentials) {
+					throw new Error('Twitch credentials not configured or invalid');
+				}
+
+				console.log('🔄 Getting new Twitch access token...');
+				
+				const response = await fetch('https://id.twitch.tv/oauth2/token', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/x-www-form-urlencoded',
+					},
+					body: new URLSearchParams({
+						client_id: credentials.clientId,
+						client_secret: credentials.clientSecret,
+						grant_type: 'client_credentials'
+					})
+				});
+
+				if (!response.ok) {
+					throw new Error(`Token request failed: ${response.status}`);
+				}
+
+				const data = await response.json();
+				twitchAccessToken = data.access_token;
+				twitchTokenExpiry = Date.now() + (data.expires_in * 1000) - 60000; // Refresh 1 minute early
+				
+				console.log('✅ Twitch access token obtained');
+				return twitchAccessToken;
+				
+			} catch (error) {
+				console.error('❌ Failed to get Twitch access token:', error);
+				throw error;
+			}
+		}
+
+		// Get User ID from username
+		async function getTwitchUserId(username) {
+			try {
+				const credentials = getTwitchCredentials();
+				if (!credentials) {
+					throw new Error('Twitch credentials not configured');
+				}
+
+				const token = await getTwitchAccessToken();
+				
+				const response = await fetch(`https://api.twitch.tv/helix/users?login=${username}`, {
+					headers: {
+						'Authorization': `Bearer ${token}`,
+						'Client-Id': credentials.clientId
+					}
+				});
+
+				if (!response.ok) {
+					throw new Error(`User lookup failed: ${response.status}`);
+				}
+
+				const data = await response.json();
+				if (data.data && data.data.length > 0) {
+					return data.data[0].id;
+				} else {
+					throw new Error('User not found');
+				}
+				
+			} catch (error) {
+				console.error('❌ Failed to get Twitch user ID:', error);
+				throw error;
+			}
+		}
+
+		// Official Twitch API followers function
+		async function updateTwitchFollowers() {
+			try {
+				// Check if we have valid Twitch credentials
+				const credentials = getTwitchCredentials();
+				if (!credentials) {
+					console.warn('⚠️ Twitch API credentials not configured');
+					updateTwitchFollowersFallback();
+					return;
+				}
+
+				console.log('🔄 Fetching Twitch followers using official API...');
+				console.log('👤 Username:', twitchConfig.username);
+				
+				// Get user ID first
+				const userId = await getTwitchUserId(twitchConfig.username);
+				console.log('👤 Twitch User ID:', userId);
+				
+				// Get follower count
+				const token = await getTwitchAccessToken();
+				console.log('🔑 Got access token:', token ? 'Yes' : 'No');
+				
+				const response = await fetch(`https://api.twitch.tv/helix/channels/followers?broadcaster_id=${userId}`, {
+					headers: {
+						'Authorization': `Bearer ${token}`,
+						'Client-Id': credentials.clientId
+					}
+				});
+
+				console.log('📡 Followers API response status:', response.status);
+
+				if (!response.ok) {
+					const errorText = await response.text();
+					console.error('❌ Followers API error response:', errorText);
+					throw new Error(`Followers request failed: ${response.status} - ${errorText}`);
+				}
+
+				const data = await response.json();
+				console.log('📊 Followers API data:', data);
+				
+				const followers = data.total || 0;
+				const formattedFollowers = formatNumber(followers);
+				
+				console.log('📈 Raw followers:', followers);
+				console.log('📈 Formatted followers:', formattedFollowers);
+				
+				// Update the followers display
+				const followersElement = document.querySelector('.stat img[alt="Twitch"]').parentElement;
+				if (followersElement) {
+					followersElement.innerHTML = `
+						<img src="https://images.seeklogo.com/logo-png/27/2/twitch-logo-png_seeklogo-274042.png" alt="Twitch"/>
+						${formattedFollowers} followers
+					`;
+					console.log('✅ Updated Twitch followers display:', formattedFollowers);
+				} else {
+					console.error('❌ Could not find Twitch followers element');
+				}
+				
+			} catch (error) {
+				console.error('❌ Twitch API error:', error);
+				updateTwitchFollowersFallback();
+			}
+		}
+		
+		function updateTwitchFollowersFallback() {
+			console.log('🔄 Using fallback for Twitch followers');
+			const followersElement = document.querySelector('.stat img[alt="Twitch"]').parentElement;
+			followersElement.innerHTML = `
+				<img src="https://images.seeklogo.com/logo-png/27/2/twitch-logo-png_seeklogo-274042.png" alt="Twitch"/>
+				N/A followers
+			`;
+		}
+
+		// Simple obfuscation helpers (not real security, just makes it less obvious)
+		function decode(encoded) {
+			return atob(encoded.split('').reverse().join(''));
+		}
+
+		// YouTube subscribers API function using Google's YouTube Data API v3
+		function updateYouTubeSubscribers() {
+			// Obfuscated API key - replace with your encoded key
+			const obfuscatedApiKey = 'Jh1UYtWS4gzcTpHZHRDWMJjUIhzVmVmQPJle5MEZnhmQ5NVY6lUQ';
+			const apiKey = decode(obfuscatedApiKey);
+			const channelId = 'UCIT9_QQpyUP2zg_39sLFb8Q';
+			
+			fetch(`https://www.googleapis.com/youtube/v3/channels?part=statistics&id=${channelId}&key=${apiKey}`)
+				.then(response => {
+					console.log('YouTube API response:', response);
+					return response.json();
+				})
+				.then(data => {
+					console.log('YouTube data:', data);
+					if (data && data.items && data.items.length > 0) {
+						const subscribers = data.items[0].statistics.subscriberCount;
+						const formattedSubs = formatNumber(subscribers);
+						
+						// Update the subscribers display
+						const subsElement = document.querySelector('.stat img[alt="YouTube"]').parentElement;
+						subsElement.innerHTML = `
+							<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/09/YouTube_full-color_icon_%282017%29.svg/2560px-YouTube_full-color_icon_%282017%29.svg.png" alt="YouTube"/>
+							${formattedSubs} subs
+						`;
+					}
+				})
+				.catch(error => {
+					console.error('YouTube API error:', error);
+					// Keep the current static value if API fails
+				});
+		}
+		
+		// Format number function (e.g., 58200 -> "58.2k")
+		function formatNumber(num) {
+			if (num >= 1000000) {
+				return (num / 1000000).toFixed(1) + 'M';
+			}
+			if (num >= 1000) {
+				return (num / 1000).toFixed(1) + 'k';
+			}
+			return num.toString();
+		}
+		
+		// Run all functions on page load
+		updateCounter();
+		updateScheduleDates();
+		updateTwitchFollowers();
+		updateYouTubeSubscribers();
+	</script>
+
+	<script>
+		// Popup functionality
+		function openPopup(popupId) {
+			var popup = document.getElementById(popupId);
+			if (popup) {
+				popup.style.display = 'flex';
+				document.body.style.overflow = 'hidden';
+			}
+		}
+
+		function closePopup(popupId) {
+			var popup = document.getElementById(popupId);
+			if (popup) {
+				popup.style.display = 'none';
+				document.body.style.overflow = 'auto';
+			}
+		}
+
+		// Close popup when clicking outside
+		document.addEventListener('click', function(event) {
+			var followPopup = document.getElementById('followPopup');
+			var subscribePopup = document.getElementById('subscribePopup');
+			
+			if (event.target === followPopup) {
+				closePopup('followPopup');
+			}
+			if (event.target === subscribePopup) {
+				closePopup('subscribePopup');
+			}
+		});
+
+		// Close popup with Escape key
+		document.addEventListener('keydown', function(event) {
+			if (event.key === 'Escape') {
+				closePopup('followPopup');
+				closePopup('subscribePopup');
+			}
+		});
+	</script>
+
+	<!-- Follow Popup -->
+	<div id="followPopup" class="popup-overlay">
+		<div class="popup-content">
+			<div class="popup-header">
+				<h3>Follow ilyambr</h3>
+				<button class="close-btn" onclick="closePopup('followPopup')">&times;</button>
+			</div>
+			<div class="popup-body">
+				<p>Choose where you'd like to follow:</p>
+				<div class="popup-buttons">
+					<a href="https://twitch.tv/ilyambrr" target="_blank" class="popup-button twitch">
+						<img src="https://images.seeklogo.com/logo-png/27/2/twitch-logo-png_seeklogo-274042.png" alt="Twitch"/>
+						Follow on Twitch
+					</a>
+					<a href="https://www.youtube.com/@ilyambr?sub_confirmation=1" target="_blank" class="popup-button youtube">
+						<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/09/YouTube_full-color_icon_%282017%29.svg/2560px-YouTube_full-color_icon_%282017%29.svg.png" alt="YouTube"/>
+						Subscribe to YouTube
+					</a>
+					<a href="https://www.tiktok.com/@ilyambr_" target="_blank" class="popup-button tiktok">
+						<img src="https://logos-world.net/wp-content/uploads/2020/04/TikTok-Logo-2016-present.png" alt="TikTok"/>
+						Follow on TikTok
+					</a>
+					<a href="https://guns.lol/ilyambr" target="_blank" class="popup-button guns">
+						<img src="https://img.icons8.com/?size=100&id=7867&format=png&color=FFFFFF" alt="More Links"/>
+						More Links
+					</a>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- Subscribe Popup -->
+	<div id="subscribePopup" class="popup-overlay">
+		<div class="popup-content">
+			<div class="popup-header">
+				<h3>Subscribe to ilyambr</h3>
+				<button class="close-btn" onclick="closePopup('subscribePopup')">&times;</button>
+			</div>
+			<div class="popup-body">
+				<p>Choose where you'd like to subscribe:</p>
+				<div class="popup-buttons">
+					<a href="https://subs.twitch.tv/ilyambrr" target="_blank" class="popup-button twitch">
+						<img src="https://images.seeklogo.com/logo-png/27/2/twitch-logo-png_seeklogo-274042.png" alt="Twitch"/>
+						Subscribe on Twitch
+					</a>
+					<a href="https://ko-fi.com/ilyambr" target="_blank" class="popup-button kofi">
+						<img src="https://storage.ko-fi.com/cdn/nav-logo-stroke.png" alt="Ko-fi"/>
+						Support on Ko-fi
+					</a>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- Admin Login Popup -->
+	<div id="adminLoginPopup" class="popup-overlay">
+		<div class="popup-content admin-popup">
+			<div class="popup-header">
+				<h3>Admin Login</h3>
+				<button class="close-btn" onclick="closeAdminPopup('adminLoginPopup')">&times;</button>
+			</div>
+			<div class="popup-body">
+				<p>Sign in with your Google account to access admin panel:</p>
+				<div class="google-signin-container">
+					<button id="googleSignIn" class="google-signin-btn">
+						<img src="https://developers.google.com/identity/images/g-logo.png" alt="Google"/>
+						Sign in with Google
+					</button>
+				</div>
+				<div id="loginStatus" class="login-status"></div>
+			</div>
+		</div>
+	</div>
+
+	<!-- Admin Panel Popup -->
+	<div id="adminPanelPopup" class="popup-overlay">
+		<div class="popup-content admin-popup admin-panel">
+			<div class="popup-header">
+				<h3>Admin Panel</h3>
+				<div class="admin-user-info">
+					<span id="adminUserName">Welcome, Admin</span>
+					<button class="admin-logout-btn" onclick="signOut()">Logout</button>
+				</div>
+				<button class="close-btn" onclick="closeAdminPopup('adminPanelPopup')">&times;</button>
+			</div>
+			<div class="popup-body admin-panel-body">
+				<div class="admin-section">
+					<h4>Profile Settings</h4>
+					<div class="admin-setting">
+						<label for="profilePicture">Profile Picture URL:</label>
+						<input type="url" id="profilePicture" placeholder="https://example.com/image.jpg">
+						<button onclick="updateProfilePicture()">Update</button>
+					</div>
+				</div>
+				
+				<div class="admin-section">
+					<h4>Name Settings</h4>
+					<div class="admin-setting">
+						<label for="displayName">Display Name:</label>
+						<input type="text" id="displayName" placeholder="ilyambr" maxlength="50">
+						<button onclick="updateDisplayName()">Update</button>
+						<small>This is shown as your main name on the website</small>
+					</div>
+					<div class="admin-setting">
+						<label for="username">Username:</label>
+						<input type="text" id="username" placeholder="@ilyambrr" maxlength="30">
+						<button onclick="updateUsername()">Update</button>
+						<small>This is your handle/username (include @ if desired)</small>
+					</div>
+				</div>
+				
+				<div class="admin-section">
+					<h4>Twitch Status</h4>
+					<div class="admin-setting">
+						<label for="twitchStatus">Twitch Status:</label>
+						<select id="twitchStatus" onchange="updateTwitchStatus()">
+							<option value="">None</option>
+							<option value="affiliate">Affiliate</option>
+							<option value="partner">Partner</option>
+							<option value="verified">Verified <img src="https://ilyambr.me/img/checkmark.svg" style="width: 12px; height: 12px; margin-left: 4px; filter: invert(1); vertical-align: middle;" alt="✓"></option>
+						</select>
+						<small>Choose your Twitch account status</small>
+					</div>
+				</div>
+				
+				<div class="admin-section">
+					<h4>Page Logo Settings</h4>
+					<div class="admin-setting">
+						<label for="pageLogo">Page Logo URL:</label>
+						<input type="url" id="pageLogo" placeholder="https://example.com/logo.svg">
+						<button onclick="updatePageLogo()">Update</button>
+						<small>Logo that appears in the top-left corner</small>
+					</div>
+				</div>
+				
+				<div class="admin-section">
+					<h4>Bio & About Settings</h4>
+					<div class="admin-setting">
+						<label for="bioText">Bio:</label>
+						<input type="text" id="bioText" placeholder="just give me a year max....." maxlength="100">
+						<button onclick="updateBio()">Update</button>
+						<small>Short bio text under your name</small>
+					</div>
+					<div class="admin-setting">
+						<label for="aboutText">About Me:</label>
+						<textarea id="aboutText" placeholder="i make stuff, i stream, that's it really..." maxlength="500" rows="3"></textarea>
+						<button onclick="updateAboutText()">Update</button>
+						<small>About section description</small>
+					</div>
+					<div class="admin-setting">
+						<label for="streamingYear">Started Streaming Year:</label>
+						<input type="number" id="streamingYear" placeholder="2024" min="2000" max="2030">
+						<button onclick="updateStreamingYear()">Update</button>
+						<small>Year you started streaming</small>
+					</div>
+				</div>
+				
+				<div class="admin-section">
+					<h4>Stats Settings</h4>
+					<div class="admin-setting">
+						<label for="followerCount">Twitch Followers:</label>
+						<input type="number" id="followerCount" placeholder="1234" min="0">
+						<button onclick="updateFollowerCount()">Update</button>
+						<small>Custom follower count (leave empty for API)</small>
+					</div>
+					<div class="admin-setting">
+						<label for="subscriberCount">YouTube Subscribers:</label>
+						<input type="number" id="subscriberCount" placeholder="5678" min="0">
+						<button onclick="updateSubscriberCount()">Update</button>
+						<small>Custom subscriber count (leave empty for API)</small>
+					</div>
+				</div>
+				
+				<div class="admin-section">
+					<h4>Social Links</h4>
+					<div class="admin-setting">
+						<label for="twitchLink">Twitch URL:</label>
+						<input type="url" id="twitchLink" placeholder="https://twitch.tv/ilyambrr">
+						<button onclick="updateTwitchLink()">Update</button>
+					</div>
+					<div class="admin-setting">
+						<label for="youtubeLink">YouTube URL:</label>
+						<input type="url" id="youtubeLink" placeholder="https://www.youtube.com/@ilyambr">
+						<button onclick="updateYouTubeLink()">Update</button>
+					</div>
+					<div class="admin-setting">
+						<label for="tiktokLink">TikTok URL:</label>
+						<input type="url" id="tiktokLink" placeholder="https://www.tiktok.com/@ilyambr_">
+						<button onclick="updateTikTokLink()">Update</button>
+					</div>
+					<div class="admin-setting">
+						<label for="instagramLink">Instagram URL:</label>
+						<input type="url" id="instagramLink" placeholder="https://www.instagram.com/ilyambr">
+						<button onclick="updateInstagramLink()">Update</button>
+					</div>
+					<div class="admin-setting">
+						<label for="xLink">X (Twitter) URL:</label>
+						<input type="url" id="xLink" placeholder="https://x.com/ilyambr">
+						<button onclick="updateXLink()">Update</button>
+					</div>
+					<div class="admin-setting">
+						<label for="redditLink">Reddit URL:</label>
+						<input type="url" id="redditLink" placeholder="https://reddit.com/u/ilyambr">
+						<button onclick="updateRedditLink()">Update</button>
+					</div>
+				</div>
+				
+				<div class="admin-section">
+					<h4>Action Buttons</h4>
+					<div class="admin-setting">
+						<label for="followButtonText">Follow Button Text:</label>
+						<input type="text" id="followButtonText" placeholder="Follow" maxlength="20">
+						<button onclick="updateFollowButton()">Update</button>
+					</div>
+					<div class="admin-setting">
+						<label for="subscribeButtonText">Subscribe Button Text:</label>
+						<input type="text" id="subscribeButtonText" placeholder="Subscribe" maxlength="20">
+						<button onclick="updateSubscribeButton()">Update</button>
+					</div>
+				</div>
+				
+				<div class="admin-section">
+					<h4>Schedule Settings</h4>
+					<div class="admin-setting">
+						<label for="saturdayTime">Saturday Stream Time:</label>
+						<input type="text" id="saturdayTime" placeholder="5:00PM">
+						<button onclick="updateSaturdayTime()">Update</button>
+						<small>e.g., 5:00PM, 17:00, etc.</small>
+					</div>
+					<div class="admin-setting">
+						<label for="sundayTime">Sunday Stream Time:</label>
+						<input type="text" id="sundayTime" placeholder="6:00PM">
+						<button onclick="updateSundayTime()">Update</button>
+						<small>e.g., 6:00PM, 18:00, etc.</small>
+					</div>
+				</div>
+				
+				<div class="admin-section">
+					<h4>Discord Settings</h4>
+					<div class="admin-setting">
+						<label for="discordLink">Discord Invite Link:</label>
+						<input type="url" id="discordLink" placeholder="https://discord.gg/YourInviteCode or any link">
+						<button onclick="updateDiscordLink()">Update</button>
+						<small>Enter any Discord link or URL</small>
+					</div>
+				</div>
+				
+				<div class="admin-section">
+					<h4>Background Settings</h4>
+					<div class="admin-setting">
+						<label for="backgroundImage">Background Image URL:</label>
+						<input type="url" id="backgroundImage" placeholder="https://example.com/background.jpg">
+						<button onclick="updateBackgroundImage()">Update</button>
+					</div>
+				</div>
+				
+				<div class="admin-section">
+					<h4>YouTube Settings</h4>
+					<div class="admin-setting">
+						<label for="youtubeVideoId">YouTube Video ID:</label>
+						<input type="text" id="youtubeVideoId" placeholder="dQw4w9WgXcQ">
+						<button onclick="updateYouTubeVideo()">Update</button>
+						<small>Enter just the video ID from the YouTube URL</small>
+					</div>
+				</div>
+				
+				<div class="admin-section">
+					<h4>Current Settings</h4>
+					<div class="current-settings">
+						<p><strong>Display Name:</strong> <span id="currentDisplayName">N/A</span></p>
+						<p><strong>Username:</strong> <span id="currentUsername">N/A</span></p>
+						<p><strong>Bio:</strong> <span id="currentBio">N/A</span></p>
+						<p><strong>About Text:</strong> <span id="currentAboutText">N/A</span></p>
+						<p><strong>Streaming Year:</strong> <span id="currentStreamingYear">N/A</span></p>
+						<p><strong>Page Logo:</strong> <span id="currentPageLogo">N/A</span></p>
+						<p><strong>Twitch Status:</strong> <span id="currentTwitchStatus">None</span></p>
+						<p><strong>Follower Count:</strong> <span id="currentFollowerCount">API</span></p>
+						<p><strong>Subscriber Count:</strong> <span id="currentSubscriberCount">API</span></p>
+						<p><strong>Discord Link:</strong> <span id="currentDiscordLink">N/A</span></p>
+						<p><strong>Profile Picture:</strong> <span id="currentProfilePic">N/A</span></p>
+						<p><strong>Background:</strong> <span id="currentBackground">N/A</span></p>
+						<p><strong>YouTube Video:</strong> <span id="currentYouTubeVideo">N/A</span></p>
+						<p><strong>Firebase Database:</strong> <span id="currentFirebaseUrl">Loading...</span></p>
+					</div>
+					
+					<div class="admin-setting">
+						<h3>🔥 Firebase Database Settings</h3>
+						<label for="firebaseDatabaseUrl">Database URL:</label>
+						<input type="text" id="firebaseDatabaseUrl" placeholder="https://your-project-default-rtdb.firebaseapp.com/" />
+						<button onclick="updateFirebaseDatabase()">Switch Database</button>
+						<div style="margin-top: 10px; padding: 10px; background: rgba(255,255,255,0.1); border-radius: 5px; font-size: 12px;">
+							<strong>⚠️ Warning:</strong> Switching database will reload the page and use the new Firebase project for all settings.<br>
+							<strong>🔐 Security:</strong> Database URLs are encrypted before storage.
+						</div>
+					</div>
+					
+					<div class="admin-setting">
+						<h3>🎨 Website Effects</h3>
+						<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+							<div>
+								<label style="display: flex; align-items: center; gap: 8px;">
+									<input type="checkbox" id="colorEffectToggle" onchange="toggleColorEffect()">
+									<span>🌈 Color Effect</span>
+								</label>
+							</div>
+							<div>
+								<label style="display: flex; align-items: center; gap: 8px;">
+									<input type="checkbox" id="grayscaleToggle" onchange="toggleGrayscale()">
+									<span>⚫ Grayscale</span>
+								</label>
+							</div>
+							<div>
+								<label style="display: flex; align-items: center; gap: 8px;">
+									<input type="checkbox" id="blurToggle" onchange="toggleBlur()">
+									<span>🌫️ Blur Background</span>
+								</label>
+							</div>
+							<div>
+								<label style="display: flex; align-items: center; gap: 8px;">
+									<input type="checkbox" id="sepiaToggle" onchange="toggleSepia()">
+									<span>📸 Sepia Effect</span>
+								</label>
+							</div>
+							<div>
+								<label style="display: flex; align-items: center; gap: 8px;">
+									<input type="checkbox" id="invertToggle" onchange="toggleInvert()">
+									<span>🔄 Invert Colors</span>
+								</label>
+							</div>
+							<div>
+								<label style="display: flex; align-items: center; gap: 8px;">
+									<input type="checkbox" id="brightnessToggle" onchange="toggleBrightness()">
+									<span>☀️ High Brightness</span>
+								</label>
+							</div>
+						</div>
+						<div style="display: flex; gap: 10px;">
+							<button onclick="resetAllEffects()" style="background: linear-gradient(90deg, #ff6b6b, #ee5a24); flex: 1;">
+								Reset All Effects
+							</button>
+							<button onclick="saveEffectsGlobally()" style="background: linear-gradient(90deg, #00d2d3, #54a0ff); flex: 1;">
+								Save Effects Globally
+							</button>
+						</div>
+					</div>
+					
+					<div class="admin-setting" style="margin-top: 15px;">
+						<button onclick="resetToDefaults()" style="background: linear-gradient(90deg, #ff4757, #ff3838); border-color: rgba(255, 71, 87, 0.3);">
+							Reset All to Defaults
+						</button>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<script>
+		function openPopup(popupId) {
+			document.getElementById(popupId).style.display = 'flex';
+			document.body.style.overflow = 'hidden';
+		}
+
+		function closePopup(popupId) {
+			document.getElementById(popupId).style.display = 'none';
+			document.body.style.overflow = 'auto';
+		}
+
+		// Close popup when clicking outside
+		window.onclick = function(event) {
+			const followPopup = document.getElementById('followPopup');
+			const subscribePopup = document.getElementById('subscribePopup');
+			if (event.target == followPopup) {
+				closePopup('followPopup');
+			}
+			if (event.target == subscribePopup) {
+				closePopup('subscribePopup');
+			}
+		}
+
+		// Close popup with Escape key
+		document.addEventListener('keydown', function(event) {
+			if (event.key === 'Escape') {
+				closePopup('followPopup');
+				closePopup('subscribePopup');
+			}
+		});
+	</script>
+	<script>
+		let youtubeVideoLoaded = false;
+		
+		function switchStream(platform) {
+			const twitchEmbed = document.getElementById('twitch-embed');
+			const youtubeEmbed = document.getElementById('youtube-embed');
+			const switches = document.querySelectorAll('.stream-switch');
+			const thumbContainer = document.querySelector('.thumb');
+			const heading = document.querySelector('.stream-header h3');
+			
+			// Update switch states
+			switches.forEach(sw => sw.classList.remove('active'));
+			event.target.classList.add('active');
+			
+			if (platform === 'twitch') {
+				twitchEmbed.classList.remove('hidden');
+				youtubeEmbed.classList.add('hidden');
+				thumbContainer.classList.remove('hide-live'); // Show LIVE badge
+				heading.textContent = 'Recent Streams'; // Change text to streams
+			} else if (platform === 'youtube') {
+				twitchEmbed.classList.add('hidden');
+				youtubeEmbed.classList.remove('hidden');
+				thumbContainer.classList.add('hide-live'); // Hide LIVE badge
+				heading.textContent = 'Recent Videos'; // Change text to videos
+				
+				// Load YouTube video if not already loaded
+				if (!youtubeVideoLoaded) {
+					loadLatestYouTubeVideo();
+					youtubeVideoLoaded = true;
+				}
+			}
+		}
+		
+		async function loadLatestYouTubeVideo() {
+			try {
+				// Use the same API approach that works for subscriber count
+				const obfuscatedApiKey = 'Jh1UYtWS4gzcTpHZHRDWMJjUIhzVmVmQPJle5MEZnhmQ5NVY6lUQ';
+				const apiKey = decode(obfuscatedApiKey);
+				const channelId = 'UCIT9_QQpyUP2zg_39sLFb8Q';
+				
+				const response = await fetch(`https://www.googleapis.com/youtube/v3/search?key=${apiKey}&channelId=${channelId}&part=snippet&order=date&maxResults=1&type=video`);
+				
+				if (!response.ok) {
+					throw new Error('YouTube API request failed');
+				}
+				
+				const data = await response.json();
+				console.log('YouTube video data:', data);
+				
+				if (data.items && data.items.length > 0) {
+					const videoId = data.items[0].id.videoId;
+					const youtubeEmbed = document.getElementById('youtube-embed');
+					
+					// Use the same iframe format as admin panel with all specified parameters
+					youtubeEmbed.outerHTML = `
+						<iframe 
+							id="youtube-embed"
+							class="embed-frame hidden" 
+							width="100%" 
+							height="100%" 
+							src="https://www.youtube-nocookie.com/embed/${videoId}?autoplay=0&controls=1&cc_load_policy=0&enablejsapi=0&fs=1&hd=1&iv_load_policy=3&modestbranding=1&playsinline=1&rel=0&vq=hd1080" 
+							frameborder="0" 
+							allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+							allowfullscreen>
+						</iframe>
+					`;
+					console.log('✅ Loaded latest video ID:', videoId);
+					youtubeVideoLoaded = true; // Mark as loaded
+				} else {
+					console.log('No YouTube videos found');
+					const youtubeEmbed = document.getElementById('youtube-embed');
+					youtubeEmbed.src = 'about:blank';
+				}
+			} catch (error) {
+				console.error('Error loading YouTube video:', error);
+				const youtubeEmbed = document.getElementById('youtube-embed');
+				youtubeEmbed.src = 'about:blank';
+			}
+		}
+	</script>
+
+	<script>
+		// Simple encryption/decryption functions for Firebase URL
+		function encryptUrl(url) {
+			// Simple Base64 encoding with additional obfuscation
+			const encoded = btoa(url);
+			return encoded.split('').reverse().join('') + 'fb_enc';
+		}
+		
+		function decryptUrl(encryptedUrl) {
+			try {
+				if (!encryptedUrl.endsWith('fb_enc')) return null;
+				const reversed = encryptedUrl.slice(0, -6).split('').reverse().join('');
+				return atob(reversed);
+			} catch (e) {
+				return null;
+			}
+		}
+		
+		// Firebase Configuration (from your Firebase project)
+		// Check for encrypted custom database URL in localStorage
+		const encryptedUrl = localStorage.getItem('encryptedFirebaseUrl');
+		const customDatabaseUrl = encryptedUrl ? decryptUrl(encryptedUrl) : null;
+		const defaultDatabaseUrl = "https://ilyambr-45403-default-rtdb.firebaseio.com";
+		
+		const firebaseConfig = {
+			apiKey: "AIzaSyCTyk_sZYCXFsFOQK_faVQ5KQiQNtK1Q0",
+			authDomain: "ilyambr-45403.firebaseapp.com",
+			databaseURL: customDatabaseUrl || defaultDatabaseUrl,
+			projectId: "ilyambr-45403",
+			storageBucket: "ilyambr-45403.firebasestorage.app",
+			messagingSenderId: "826687105713",
+			appId: "1:826687105713:web:a5e0b97818a2bf91da5098"
+		};
+
+		console.log('🔥 Using Firebase database:', firebaseConfig.databaseURL);
+
+		// Initialize Firebase
+		let database = null;
+		try {
+			if (typeof firebase !== 'undefined') {
+				firebase.initializeApp(firebaseConfig);
+				database = firebase.database();
+				console.log('🔥 Firebase initialized successfully!');
+			}
+		} catch (error) {
+			console.log('Firebase not available, using localStorage fallback');
+		}
+
+		// Admin Console Functionality (moved here to be available immediately)
+		let isAdminLoggedIn = false;
+		let adminUser = null;
+		const GOOGLE_CLIENT_ID = '1012238246699-5fknt3dtu6gbo42j5fvdonqsct81tfbp.apps.googleusercontent.com';
+		const AUTHORIZED_EMAIL = 'amberrpann@gmail.com';
+
+		function openAdminLogin() {
+			console.log('🔧 Admin button clicked!');
+			console.log('📊 isAdminLoggedIn:', isAdminLoggedIn);
+			
+			if (isAdminLoggedIn) {
+				console.log('✅ User is logged in, opening admin panel');
+				loadCurrentSettings();
+				document.getElementById('adminPanelPopup').style.display = 'flex';
+				document.body.style.overflow = 'hidden';
+			} else {
+				console.log('🔐 User not logged in, opening login popup');
+				const loginPopup = document.getElementById('adminLoginPopup');
+				if (loginPopup) {
+					loginPopup.style.display = 'flex';
+					document.body.style.overflow = 'hidden';
+					console.log('✅ Login popup should be visible now');
+				} else {
+					console.error('❌ adminLoginPopup element not found!');
+				}
+			}
+		}
+
+		function closeAdminPopup(popupId) {
+			document.getElementById(popupId).style.display = 'none';
+			document.body.style.overflow = 'auto';
+		}
+
+		// Global settings management
+		async function saveGlobalSetting(key, value) {
+			try {
+				if (database) {
+					// Save to Firebase for all users
+					await database.ref('siteSettings/' + key).set(value);
+					console.log(`🌍 Global setting ${key} saved to Firebase for ALL users!`);
+				} else {
+					// Fallback to localStorage
+					localStorage.setItem('admin-' + key, value);
+					console.log(`💾 Setting ${key} saved to localStorage (fallback)`);
+				}
+			} catch (error) {
+				console.error('Failed to save setting:', error);
+				// Fallback to localStorage
+				localStorage.setItem('admin-' + key, value);
+			}
+		}
+
+		async function loadGlobalSetting(key) {
+			try {
+				if (database) {
+					// Load from Firebase
+					const snapshot = await database.ref('siteSettings/' + key).once('value');
+					const value = snapshot.val();
+					console.log(`🌍 Global setting ${key} loaded from Firebase:`, value);
+					return value;
+				} else {
+					// Fallback to localStorage
+					const value = localStorage.getItem('admin-' + key);
+					console.log(`💾 Setting ${key} loaded from localStorage:`, value);
+					return value;
+				}
+			} catch (error) {
+				console.error('Failed to load setting:', error);
+				// Fallback to localStorage
+				return localStorage.getItem('admin-' + key);
+			}
+		}
+
+		// Initialize Google Sign-In when the page loads
+		window.onload = async function() {
+			// Check for existing valid session first
+			checkExistingSession();
+			
+			// Now we have a valid Google Client ID, so use proper Google OAuth
+			if (typeof google !== 'undefined' && google.accounts) {
+				google.accounts.id.initialize({
+					client_id: GOOGLE_CLIENT_ID,
+					callback: handleCredentialResponse
+				});
+
+				google.accounts.id.renderButton(
+					document.getElementById("googleSignIn"),
+					{ 
+						theme: "outline", 
+						size: "large",
+						text: "sign_in_with",
+						width: 250
+					}
+				);
+			} else {
+				// Fallback for when Google API isn't loaded
+				document.getElementById("googleSignIn").onclick = fallbackGoogleSignIn;
+				document.getElementById("googleSignIn").innerHTML = `
+					<img src="https://developers.google.com/identity/images/g-logo.png" alt="Google"/>
+					Sign in with Google (Fallback)
+				`;
+			}
+			
+			// Load existing settings from Firebase/localStorage (now properly awaited)
+			try {
+				await loadExistingSettings();
+				console.log('✅ Settings loaded successfully');
+			} catch (error) {
+				console.error('❌ Error loading settings:', error);
+			}
+		};
+
+		function checkExistingSession() {
+			const sessionData = sessionStorage.getItem('admin-session');
+			if (sessionData) {
+				try {
+					const session = JSON.parse(sessionData);
+					const now = Date.now();
+					
+					// Check if session is still valid (not expired)
+					if (session.tokenExp && session.tokenExp > now) {
+						// Session is valid
+						adminUser = session.user;
+						isAdminLoggedIn = true;
+						
+						// Set up auto-logout when token expires
+						const timeUntilExpiry = session.tokenExp - now;
+						setTimeout(() => {
+							signOut();
+							alert('Session expired. Please sign in again.');
+						}, timeUntilExpiry);
+						
+						return true;
+					} else {
+						// Session expired, clear it
+						sessionStorage.removeItem('admin-session');
+					}
+				} catch (error) {
+					console.error('Invalid session data:', error);
+					sessionStorage.removeItem('admin-session');
+				}
+			}
+			return false;
+		}
+
+		function fallbackGoogleSignIn() {
+			// Simple email verification for demonstration
+			const email = prompt("Enter your email for admin access:");
+			if (email === AUTHORIZED_EMAIL) {
+				adminUser = { email: email, name: "Admin User" };
+				isAdminLoggedIn = true;
+				showLoginSuccess();
+				setTimeout(() => {
+					closeAdminPopup('adminLoginPopup');
+					openAdminLogin(); // This will now open the admin panel
+				}, 1000);
+			} else {
+				showLoginError("Unauthorized email address");
+			}
+		}
+
+		function handleCredentialResponse(response) {
+			// More secure client-side verification
+			try {
+				// Verify token structure
+				const tokenParts = response.credential.split('.');
+				if (tokenParts.length !== 3) {
+					throw new Error('Invalid token format');
+				}
+
+				const payload = JSON.parse(atob(tokenParts[1]));
+				
+				// Verify token hasn't expired
+				const now = Math.floor(Date.now() / 1000);
+				if (payload.exp && payload.exp < now) {
+					throw new Error('Token expired');
+				}
+
+				// Verify token is from correct client ID
+				if (payload.aud !== GOOGLE_CLIENT_ID) {
+					throw new Error('Invalid audience');
+				}
+
+				// Verify issuer
+				if (payload.iss !== 'accounts.google.com' && payload.iss !== 'https://accounts.google.com') {
+					throw new Error('Invalid issuer');
+				}
+
+				// Check email verification
+				if (!payload.email_verified) {
+					throw new Error('Email not verified');
+				}
+
+				// Check authorized email
+				if (payload.email === AUTHORIZED_EMAIL) {
+					adminUser = {
+						email: payload.email,
+						name: payload.name,
+						picture: payload.picture
+					};
+					isAdminLoggedIn = true;
+					showLoginSuccess();
+					
+					// Optional: Store session with expiry
+					const sessionData = {
+						user: adminUser,
+						loginTime: Date.now(),
+						tokenExp: payload.exp * 1000 // Convert to milliseconds
+					};
+					sessionStorage.setItem('admin-session', JSON.stringify(sessionData));
+					
+					setTimeout(() => {
+						closeAdminPopup('adminLoginPopup');
+						openAdminLogin();
+					}, 1000);
+				} else {
+					showLoginError("Unauthorized email address");
+				}
+			} catch (error) {
+				console.error('Token verification failed:', error);
+				showLoginError("Login verification failed: " + error.message);
+			}
+		}
+
+		function showLoginSuccess() {
+			const status = document.getElementById('loginStatus');
+			status.className = 'login-status success';
+			status.textContent = `Successfully signed in as ${adminUser.name}`;
+		}
+
+		function showLoginError(message) {
+			const status = document.getElementById('loginStatus');
+			status.className = 'login-status error';
+			status.textContent = message;
+		}
+
+		function signOut() {
+			isAdminLoggedIn = false;
+			adminUser = null;
+			closeAdminPopup('adminPanelPopup');
+			
+			// Clear session data
+			sessionStorage.removeItem('admin-session');
+			
+			if (typeof google !== 'undefined' && google.accounts) {
+				google.accounts.id.disableAutoSelect();
+			}
+			
+			document.getElementById('loginStatus').textContent = '';
+		}
+
+		// Admin Panel Functions
+		function loadCurrentSettings() {
+			document.getElementById('adminUserName').textContent = `Welcome, ${adminUser.name}`;
+			
+			// Load current settings
+			const currentPic = localStorage.getItem('admin-profile-pic') || 'Default';
+			const currentBg = localStorage.getItem('admin-background') || 'Default';
+			const currentVideo = localStorage.getItem('admin-youtube-video') || 'Auto-Latest';
+			
+			document.getElementById('currentProfilePic').textContent = currentPic;
+			document.getElementById('currentBackground').textContent = currentBg;
+			document.getElementById('currentYouTubeVideo').textContent = currentVideo;
+		}
+
+		async function loadExistingSettings() {
+			console.log('🌍 Loading global settings for ALL visitors...');
+			// Apply saved GLOBAL settings on page load - visible to ALL users
+			const savedDisplayName = await loadGlobalSetting('display-name');
+			const savedUsername = await loadGlobalSetting('username');
+			const savedTwitchStatus = await loadGlobalSetting('twitchStatus');
+			const savedDiscordLink = await loadGlobalSetting('discordLink');
+			const savedPic = await loadGlobalSetting('profile-pic');
+			const savedBg = await loadGlobalSetting('background');
+			const savedVideo = await loadGlobalSetting('youtube-video');
+			const savedPageLogo = await loadGlobalSetting('pageLogo');
+			const savedBio = await loadGlobalSetting('bioText');
+			const savedAboutText = await loadGlobalSetting('aboutText');
+			const savedStreamingYear = await loadGlobalSetting('streamingYear');
+			const savedFollowerCount = await loadGlobalSetting('followerCount');
+			const savedSubscriberCount = await loadGlobalSetting('subscriberCount');
+			const savedTwitchLink = await loadGlobalSetting('twitchLink');
+			const savedYouTubeLink = await loadGlobalSetting('youtubeLink');
+			const savedTikTokLink = await loadGlobalSetting('tiktokLink');
+			const savedInstagramLink = await loadGlobalSetting('instagramLink');
+			const savedXLink = await loadGlobalSetting('xLink');
+			const savedRedditLink = await loadGlobalSetting('redditLink');
+			const savedFollowButtonText = await loadGlobalSetting('followButtonText');
+			const savedSubscribeButtonText = await loadGlobalSetting('subscribeButtonText');
+			const savedSaturdayTime = await loadGlobalSetting('saturdayTime');
+			const savedSundayTime = await loadGlobalSetting('sundayTime');
+			
+			console.log('� Global display name:', savedDisplayName);
+			console.log('📧 Global username:', savedUsername);
+			console.log('�🖼️ Global profile pic:', savedPic);
+			console.log('🎨 Global background:', savedBg);
+			console.log('📺 Global YouTube video:', savedVideo);
+			
+			// Apply saved names
+			if (savedDisplayName && savedDisplayName !== 'N/A') {
+				const nameElements = document.querySelectorAll('.name, h1, .profile-name');
+				nameElements.forEach(element => {
+					if (element.textContent.includes('ilyambr') || element.textContent === 'ilyambr') {
+						element.textContent = savedDisplayName;
+					}
+				});
+				document.title = savedDisplayName;
+			}
+			
+			if (savedUsername && savedUsername !== 'N/A') {
+				const usernameElements = document.querySelectorAll('.username, .handle, .user-handle');
+				usernameElements.forEach(element => {
+					element.textContent = savedUsername;
+				});
+				
+				// Also look for any elements that contain @ilyambrr and update them
+				const allElements = document.querySelectorAll('*');
+				allElements.forEach(element => {
+					if (element.textContent && element.textContent.includes('@ilyambrr')) {
+						element.textContent = element.textContent.replace('@ilyambrr', savedUsername);
+					}
+				});
+			}
+			
+			// Apply saved Twitch status
+			if (savedTwitchStatus) {
+				console.log('💜 Applying global Twitch status to ALL visitors:', savedTwitchStatus);
+				const statusBadge = document.getElementById('twitchStatusBadge');
+				if (statusBadge) {
+					let statusText = savedTwitchStatus.charAt(0).toUpperCase() + savedTwitchStatus.slice(1);
+					if (savedTwitchStatus === 'verified') {
+						statusText += ' <img src="https://ilyambr.me/img/checkmark.svg" style="width: 12px; height: 12px; margin-left: 4px; filter: invert(1); vertical-align: middle;" alt="✓">';
+					}
+					statusBadge.innerHTML = statusText;
+					statusBadge.style.display = 'block'; // Show the badge
+					console.log('✅ Twitch status badge shown:', savedTwitchStatus);
+				}
+			} else {
+				console.log('💜 No Twitch status set, badge remains hidden');
+			}
+			
+			// Apply saved Discord link
+			if (savedDiscordLink && savedDiscordLink !== 'N/A') {
+				console.log('💬 Applying global Discord link to ALL visitors:', savedDiscordLink);
+				const discordLink = document.getElementById('discordSocialLink');
+				if (discordLink) {
+					discordLink.href = savedDiscordLink;
+				}
+				console.log('✅ Discord link updated');
+			}
+			
+			// Apply saved page logo
+			if (savedPageLogo && savedPageLogo !== 'N/A') {
+				console.log('🖼️ Applying global page logo to ALL visitors:', savedPageLogo);
+				const logoElement = document.getElementById('pageLogoImg');
+				if (logoElement) {
+					logoElement.src = savedPageLogo;
+				}
+			}
+			
+			// Apply saved bio
+			if (savedBio && savedBio !== 'N/A') {
+				console.log('📝 Applying global bio to ALL visitors:', savedBio);
+				const bioElement = document.querySelector('.bio');
+				if (bioElement) {
+					bioElement.textContent = savedBio;
+				}
+			}
+			
+			// Apply saved about text
+			if (savedAboutText && savedAboutText !== 'N/A') {
+				console.log('📄 Applying global about text to ALL visitors:', savedAboutText);
+				const aboutElement = document.getElementById('aboutTextContent');
+				if (aboutElement) {
+					aboutElement.textContent = savedAboutText;
+				}
+			}
+			
+			// Apply saved streaming year
+			if (savedStreamingYear && savedStreamingYear !== 'N/A') {
+				console.log('📅 Applying global streaming year to ALL visitors:', savedStreamingYear);
+				const yearElement = document.getElementById('streamingYearStat');
+				if (yearElement) {
+					yearElement.textContent = `Streaming since ${savedStreamingYear}`;
+				}
+			}
+			
+			// Apply saved follower count
+			if (savedFollowerCount && savedFollowerCount !== 'N/A') {
+				console.log('👥 Applying global follower count to ALL visitors:', savedFollowerCount);
+				const followerElement = document.getElementById('twitchFollowersStat');
+				if (followerElement) {
+					followerElement.innerHTML = `
+						<img src="https://images.seeklogo.com/logo-png/27/2/twitch-logo-png_seeklogo-274042.png" alt="Twitch"/>
+						${formatNumber(parseInt(savedFollowerCount))} followers
+					`;
+				}
+			}
+			
+			// Apply saved subscriber count
+			if (savedSubscriberCount && savedSubscriberCount !== 'N/A') {
+				console.log('📺 Applying global subscriber count to ALL visitors:', savedSubscriberCount);
+				const subscriberElement = document.getElementById('youtubeSubscribersStat');
+				if (subscriberElement) {
+					subscriberElement.innerHTML = `
+						<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/09/YouTube_full-color_icon_%282017%29.svg/2560px-YouTube_full-color_icon_%282017%29.svg.png" alt="YouTube"/>
+						${formatNumber(parseInt(savedSubscriberCount))} subs
+					`;
+				}
+			}
+			
+			// Apply saved social links
+			if (savedTwitchLink && savedTwitchLink !== 'N/A') {
+				updateSocialLink('twitch', savedTwitchLink);
+			}
+			if (savedYouTubeLink && savedYouTubeLink !== 'N/A') {
+				updateSocialLink('youtube', savedYouTubeLink);
+			}
+			if (savedTikTokLink && savedTikTokLink !== 'N/A') {
+				updateSocialLink('tiktok', savedTikTokLink);
+			}
+			if (savedInstagramLink && savedInstagramLink !== 'N/A') {
+				updateSocialLink('instagram', savedInstagramLink);
+			}
+			if (savedXLink && savedXLink !== 'N/A') {
+				updateSocialLink('x', savedXLink);
+			}
+			if (savedRedditLink && savedRedditLink !== 'N/A') {
+				updateSocialLink('reddit', savedRedditLink);
+			}
+			
+			// Apply saved button text
+			if (savedFollowButtonText && savedFollowButtonText !== 'N/A') {
+				const followButton = document.getElementById('followButton');
+				if (followButton) {
+					followButton.innerHTML = `
+						<svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+							<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+							<circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+							<path d="m19 8 2 2-2 2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+							<path d="m21 10-7.5 0" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+						</svg>
+						${savedFollowButtonText}
+					`;
+				}
+			}
+			if (savedSubscribeButtonText && savedSubscribeButtonText !== 'N/A') {
+				const subscribeButton = document.getElementById('subscribeButton');
+				if (subscribeButton) {
+					subscribeButton.innerHTML = `
+						<svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+							<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+							<circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+							<path d="m19 8 2 2-2 2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+							<path d="m21 10-7.5 0" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+						</svg>
+						${savedSubscribeButtonText}
+					`;
+				}
+			}
+			
+			// Apply saved schedule times
+			if (savedSaturdayTime && savedSaturdayTime !== 'N/A') {
+				const saturdayElement = document.getElementById('saturdaySchedule');
+				if (saturdayElement) {
+					saturdayElement.textContent = `Saturday, ${savedSaturdayTime}`;
+				}
+			}
+			if (savedSundayTime && savedSundayTime !== 'N/A') {
+				const sundayElement = document.getElementById('sundaySchedule');
+				if (sundayElement) {
+					sundayElement.textContent = `Sunday, ${savedSundayTime}`;
+				}
+			}
+			
+			// Track loading state for simple coordination
+			let avatarLoaded = false;
+			let backgroundLoaded = false;
+			
+			// Simple function to check if we can hide loading screen
+			function checkContentLoaded() {
+				if (avatarLoaded && backgroundLoaded) {
+					console.log('✅ All content loaded, hiding loading screen');
+					setTimeout(() => {
+						const loadingOverlay = document.getElementById('loadingOverlay');
+						if (loadingOverlay) {
+							loadingOverlay.classList.add('hide');
+							setTimeout(() => {
+								loadingOverlay.style.display = 'none';
+								// Show all database-dependent content
+								document.body.classList.remove('db-loading');
+								document.body.classList.add('db-loaded');
+							}, 600);
+						}
+					}, 300);
+				}
+			}
+			
+			// Handle profile picture
+			const avatarImg = document.querySelector('.avatar img');
+			const avatar = document.querySelector('.avatar');
+			if (avatarImg && avatar) {
+				if (savedPic && savedPic !== 'N/A') {
+					console.log('✅ Applying global profile picture to ALL visitors');
+					avatarImg.src = savedPic;
+					avatarImg.onload = function() {
+						avatar.classList.add('loaded'); // Show avatar after image loads
+						avatarLoaded = true;
+						checkContentLoaded();
+					};
+					avatarImg.onerror = function() {
+						console.log('❌ Global profile pic failed to load, reverting to default');
+						this.src = 'https://ilyambr.me/img/avatar.webp';
+						avatar.classList.add('loaded');
+						avatarLoaded = true;
+						saveGlobalSetting('profile-pic', 'N/A');
+						checkContentLoaded();
+					};
+				} else {
+					// Use default image
+					avatarImg.src = 'https://ilyambr.me/img/avatar.webp';
+					avatarImg.onload = function() {
+						avatar.classList.add('loaded');
+						avatarLoaded = true;
+						checkContentLoaded();
+					};
+				}
+			} else {
+				avatarLoaded = true; // No avatar to load
+			}
+			
+			// Handle background
+			if (savedBg && savedBg !== 'N/A') {
+				console.log('✅ Applying global background to ALL visitors');
+				const img = new Image();
+				img.onload = function() {
+					document.body.style.background = `url('${savedBg}') center / cover fixed no-repeat, linear-gradient(180deg, var(--bg-1), var(--bg-2))`;
+					console.log('🎨 Global background applied successfully');
+					backgroundLoaded = true;
+					checkContentLoaded();
+				};
+				img.onerror = function() {
+					console.log('❌ Global background failed to load, reverting to default');
+					document.body.style.background = `url('https://ilyambr.me/img/bg.jpg') center / cover fixed no-repeat, linear-gradient(180deg, var(--bg-1), var(--bg-2))`;
+					backgroundLoaded = true;
+					saveGlobalSetting('background', 'Default');
+					checkContentLoaded();
+				};
+				img.src = savedBg;
+			} else {
+				// Use default background
+				document.body.style.background = `url('https://ilyambr.me/img/bg.jpg') center / cover fixed no-repeat, linear-gradient(180deg, var(--bg-1), var(--bg-2))`;
+				backgroundLoaded = true;
+				checkContentLoaded();
+			}
+			
+			if (savedVideo && savedVideo !== 'N/A') {
+				// Apply custom YouTube video for ALL visitors
+				console.log('✅ Applying global YouTube video to ALL visitors');
+				updateYouTubeEmbed(savedVideo);
+				youtubeVideoLoaded = true; // Mark as loaded
+			} else {
+				// Use auto-latest for ALL visitors
+				loadLatestYouTubeVideo();
+			}
+			
+			// Load and apply global website effects
+			loadGlobalEffects();
+		}
+
+		function updateYouTubeEmbed(videoId) {
+			console.log('🎥 Updating YouTube embed with video ID:', videoId);
+			const youtubeEmbed = document.getElementById('youtube-embed');
+			console.log('Found YouTube embed element:', youtubeEmbed);
+			
+			if (youtubeEmbed) {
+				youtubeEmbed.outerHTML = `
+					<iframe 
+						id="youtube-embed"
+						class="embed-frame hidden" 
+						width="100%" 
+						height="100%" 
+						src="https://www.youtube-nocookie.com/embed/${videoId}?autoplay=0&controls=1&cc_load_policy=0&enablejsapi=0&fs=1&hd=1&iv_load_policy=3&modestbranding=1&playsinline=1&rel=0&vq=hd1080" 
+						frameborder="0" 
+						allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+						allowfullscreen>
+					</iframe>
+				`;
+				console.log('✅ Updated YouTube embed with video ID:', videoId);
+				
+				// Re-get the element after outerHTML replacement and check if it's visible when YouTube tab is active
+				const newYoutubeEmbed = document.getElementById('youtube-embed');
+				const youtubeButton = document.querySelector('.stream-switch[onclick*="youtube"]');
+				if (youtubeButton && youtubeButton.classList.contains('active')) {
+					console.log('YouTube tab is active, removing hidden class');
+					newYoutubeEmbed.classList.remove('hidden');
+				}
+			} else {
+				console.error('❌ YouTube embed element not found!');
+			}
+		}
+
+		// Admin Panel Functions
+		async function loadCurrentSettings() {
+			document.getElementById('adminUserName').textContent = `Welcome, ${adminUser.name}`;
+			
+			// Load current GLOBAL settings
+			const currentDisplayName = await loadGlobalSetting('display-name') || 'N/A';
+			const currentUsername = await loadGlobalSetting('username') || 'N/A';
+			const currentTwitchStatus = await loadGlobalSetting('twitchStatus') || '';
+			const currentDiscordLink = await loadGlobalSetting('discordLink') || 'N/A';
+			const currentPic = await loadGlobalSetting('profile-pic') || 'N/A';
+			const currentBg = await loadGlobalSetting('background') || 'N/A';
+			const currentVideo = await loadGlobalSetting('youtube-video') || 'N/A';
+			const currentPageLogo = await loadGlobalSetting('pageLogo') || '';
+			const currentBio = await loadGlobalSetting('bioText') || '';
+			const currentAboutText = await loadGlobalSetting('aboutText') || '';
+			const currentStreamingYear = await loadGlobalSetting('streamingYear') || '';
+			const currentFollowerCount = await loadGlobalSetting('followerCount') || '';
+			const currentSubscriberCount = await loadGlobalSetting('subscriberCount') || '';
+			const currentTwitchLink = await loadGlobalSetting('twitchLink') || '';
+			const currentYouTubeLink = await loadGlobalSetting('youtubeLink') || '';
+			const currentTikTokLink = await loadGlobalSetting('tiktokLink') || '';
+			const currentInstagramLink = await loadGlobalSetting('instagramLink') || '';
+			const currentXLink = await loadGlobalSetting('xLink') || '';
+			const currentRedditLink = await loadGlobalSetting('redditLink') || '';
+			const currentFollowButtonText = await loadGlobalSetting('followButtonText') || '';
+			const currentSubscribeButtonText = await loadGlobalSetting('subscribeButtonText') || '';
+			const currentSaturdayTime = await loadGlobalSetting('saturdayTime') || '';
+			const currentSundayTime = await loadGlobalSetting('sundayTime') || '';
+			
+			// Display current settings
+			document.getElementById('currentDisplayName').textContent = currentDisplayName === 'N/A' ? 'N/A' : currentDisplayName;
+			document.getElementById('currentUsername').textContent = currentUsername === 'N/A' ? 'N/A' : currentUsername;
+			document.getElementById('currentTwitchStatus').textContent = currentTwitchStatus ? currentTwitchStatus.charAt(0).toUpperCase() + currentTwitchStatus.slice(1) : 'None';
+			document.getElementById('twitchStatus').value = currentTwitchStatus; // Set the selector value
+			document.getElementById('currentDiscordLink').textContent = currentDiscordLink === 'N/A' ? 'N/A' : (currentDiscordLink.length > 30 ? currentDiscordLink.substring(0, 30) + '...' : currentDiscordLink);
+			document.getElementById('currentProfilePic').textContent = currentPic === 'N/A' ? 'N/A' : currentPic.substring(0, 50) + (currentPic.length > 50 ? '...' : '');
+			document.getElementById('currentBackground').textContent = currentBg === 'N/A' ? 'N/A' : currentBg.substring(0, 50) + (currentBg.length > 50 ? '...' : '');
+			document.getElementById('currentYouTubeVideo').textContent = currentVideo;
+			document.getElementById('currentPageLogo').textContent = currentPageLogo ? (currentPageLogo.length > 30 ? currentPageLogo.substring(0, 30) + '...' : currentPageLogo) : 'Default';
+			document.getElementById('currentBio').textContent = currentBio ? (currentBio.length > 30 ? currentBio.substring(0, 30) + '...' : currentBio) : 'N/A';
+			document.getElementById('currentAboutText').textContent = currentAboutText ? (currentAboutText.length > 30 ? currentAboutText.substring(0, 30) + '...' : currentAboutText) : 'N/A';
+			document.getElementById('currentStreamingYear').textContent = currentStreamingYear || 'N/A';
+			document.getElementById('currentFollowerCount').textContent = currentFollowerCount || 'API';
+			document.getElementById('currentSubscriberCount').textContent = currentSubscriberCount || 'API';
+			document.getElementById('currentTwitchLink').textContent = currentTwitchLink ? (currentTwitchLink.length > 30 ? currentTwitchLink.substring(0, 30) + '...' : currentTwitchLink) : 'N/A';
+			document.getElementById('currentYouTubeLink').textContent = currentYouTubeLink ? (currentYouTubeLink.length > 30 ? currentYouTubeLink.substring(0, 30) + '...' : currentYouTubeLink) : 'N/A';
+			document.getElementById('currentTikTokLink').textContent = currentTikTokLink ? (currentTikTokLink.length > 30 ? currentTikTokLink.substring(0, 30) + '...' : currentTikTokLink) : 'N/A';
+			document.getElementById('currentInstagramLink').textContent = currentInstagramLink ? (currentInstagramLink.length > 30 ? currentInstagramLink.substring(0, 30) + '...' : currentInstagramLink) : 'N/A';
+			document.getElementById('currentXLink').textContent = currentXLink ? (currentXLink.length > 30 ? currentXLink.substring(0, 30) + '...' : currentXLink) : 'N/A';
+			document.getElementById('currentRedditLink').textContent = currentRedditLink ? (currentRedditLink.length > 30 ? currentRedditLink.substring(0, 30) + '...' : currentRedditLink) : 'N/A';
+			document.getElementById('currentFollowButtonText').textContent = currentFollowButtonText || 'Follow';
+			document.getElementById('currentSubscribeButtonText').textContent = currentSubscribeButtonText || 'Subscribe';
+			document.getElementById('currentSaturdayTime').textContent = currentSaturdayTime || 'N/A';
+			document.getElementById('currentSundayTime').textContent = currentSundayTime || 'N/A';
+			
+			// Display current Firebase database URL
+			document.getElementById('currentFirebaseUrl').textContent = firebaseConfig.databaseURL;
+		}
+			
+		if (savedVideo && savedVideo !== 'N/A') {
+			// Apply custom YouTube video
+			updateYouTubeEmbed(savedVideo);
+		} else {
+			// Use auto-latest
+			loadLatestYouTubeVideo();
+		}
+
+		async function updateProfilePicture() {
+			const url = document.getElementById('profilePicture').value.trim();
+			if (!url) {
+				alert('Please enter a valid image URL');
+				return;
+			}
+
+			// Test if image loads before applying GLOBALLY
+			const img = new Image();
+			img.onload = async function() {
+				// Image loaded successfully - save GLOBALLY for ALL users
+				await saveGlobalSetting('profile-pic', url);
+				
+				// Apply to all avatar images immediately
+				const avatarImgs = document.querySelectorAll('.avatar img');
+				avatarImgs.forEach(img => img.src = url);
+				
+				// Update current settings display
+				document.getElementById('currentProfilePic').textContent = url.substring(0, 50) + (url.length > 50 ? '...' : '');
+				document.getElementById('profilePicture').value = '';
+				
+				alert('Profile picture updated GLOBALLY! All visitors will see this change.');
+			};
+			img.onerror = function() {
+				alert('Failed to load image. Please check the URL and try again.');
+			};
+			img.src = url;
+		}
+
+		async function updateBackgroundImage() {
+			const url = document.getElementById('backgroundImage').value.trim();
+			if (!url) {
+				alert('Please enter a valid image URL');
+				return;
+			}
+
+			// Test if image loads before applying GLOBALLY
+			const img = new Image();
+			img.onload = async function() {
+				// Image loaded successfully - save GLOBALLY for ALL users
+				await saveGlobalSetting('background', url);
+				
+				// Apply background immediately
+				document.body.style.background = `url('${url}') center / cover fixed no-repeat, linear-gradient(180deg, var(--bg-1), var(--bg-2))`;
+				
+				// Update current settings display
+				document.getElementById('currentBackground').textContent = url.substring(0, 50) + (url.length > 50 ? '...' : '');
+				document.getElementById('backgroundImage').value = '';
+				
+				alert('Background image updated GLOBALLY! All visitors will see this change.');
+			};
+			img.onerror = function() {
+				alert('Failed to load image. Please check the URL and try again.');
+			};
+			img.src = url;
+		}
+
+		async function updateDisplayName() {
+			const displayName = document.getElementById('displayName').value.trim();
+			if (!displayName) {
+				alert('Please enter a display name');
+				return;
+			}
+
+			// Save GLOBALLY for ALL users
+			await saveGlobalSetting('display-name', displayName);
+			
+			// Update all instances of display name on the page
+			const nameElements = document.querySelectorAll('.name, h1, .profile-name');
+			nameElements.forEach(element => {
+				if (element.textContent.includes('ilyambr') || element.textContent === 'ilyambr') {
+					element.textContent = displayName;
+				}
+			});
+			
+			// Also update the page title
+			document.title = displayName;
+			
+			// Update current settings display
+			document.getElementById('currentDisplayName').textContent = displayName;
+			document.getElementById('displayName').value = '';
+			
+			alert('Display name updated GLOBALLY! All visitors will see this change.');
+		}
+
+		async function updateUsername() {
+			const username = document.getElementById('username').value.trim();
+			if (!username) {
+				alert('Please enter a username');
+				return;
+			}
+
+			// Save GLOBALLY for ALL users
+			await saveGlobalSetting('username', username);
+			
+			// Update all instances of username on the page
+			const usernameElements = document.querySelectorAll('.username, .handle, .user-handle');
+			usernameElements.forEach(element => {
+				element.textContent = username;
+			});
+			
+			// Also look for any elements that contain @ilyambrr and update them
+			const allElements = document.querySelectorAll('*');
+			allElements.forEach(element => {
+				if (element.textContent && element.textContent.includes('@ilyambrr')) {
+					element.textContent = element.textContent.replace('@ilyambrr', username);
+				}
+			});
+			
+			// Update current settings display
+			document.getElementById('currentUsername').textContent = username;
+			document.getElementById('username').value = '';
+			
+			alert('Username updated GLOBALLY! All visitors will see this change.');
+		}
+
+		async function updateTwitchStatus() {
+			const status = document.getElementById('twitchStatus').value;
+			const statusText = status || 'None';
+
+			// Save GLOBALLY for ALL users
+			await saveGlobalSetting('twitchStatus', status);
+			
+			// Update the badge display immediately
+			const statusBadge = document.getElementById('twitchStatusBadge');
+			if (statusBadge) {
+				if (status) {
+					let statusText = status.charAt(0).toUpperCase() + status.slice(1);
+					if (status === 'verified') {
+						statusText += ' <img src="https://ilyambr.me/img/checkmark.svg" style="width: 12px; height: 12px; margin-left: 4px; filter: invert(1); vertical-align: middle;" alt="✓">';
+					}
+					statusBadge.innerHTML = statusText;
+					statusBadge.style.display = 'block'; // Show the badge
+				} else {
+					statusBadge.style.display = 'none'; // Hide the badge
+				}
+			}
+			
+			// Update current settings display
+			document.getElementById('currentTwitchStatus').textContent = statusText.charAt(0).toUpperCase() + statusText.slice(1);
+			
+			console.log(`Twitch status updated to: ${statusText}`);
+			alert(`Twitch status updated GLOBALLY to: ${statusText}! All visitors will see this change.`);
+		}
+
+		async function updateDiscordLink() {
+			const discordUrl = document.getElementById('discordLink').value.trim();
+			if (!discordUrl) {
+				alert('Please enter a Discord link');
+				return;
+			}
+
+			// Save GLOBALLY for ALL users
+			await saveGlobalSetting('discordLink', discordUrl);
+			
+			// Update all Discord links immediately
+			const discordLinks = document.querySelectorAll('a[href*="discord"]');
+			discordLinks.forEach(link => {
+				link.href = discordUrl;
+			});
+			
+			// Update current settings display
+			const shortUrl = discordUrl.length > 30 ? discordUrl.substring(0, 30) + '...' : discordUrl;
+			document.getElementById('currentDiscordLink').textContent = shortUrl;
+			document.getElementById('discordLink').value = '';
+			
+			console.log(`Discord link updated to: ${discordUrl}`);
+			alert(`Discord link updated GLOBALLY! All visitors will see this change.`);
+		}
+
+		async function updatePageLogo() {
+			const logoUrl = document.getElementById('pageLogoInput').value.trim();
+			if (!logoUrl) {
+				alert('Please enter a logo URL');
+				return;
+			}
+
+			// Save GLOBALLY for ALL users
+			await saveGlobalSetting('pageLogo', logoUrl);
+			
+			// Update logo immediately
+			const logoElement = document.getElementById('pageLogoImg');
+			if (logoElement) {
+				logoElement.src = logoUrl;
+			}
+			
+			// Update current settings display
+			const shortUrl = logoUrl.length > 30 ? logoUrl.substring(0, 30) + '...' : logoUrl;
+			document.getElementById('currentPageLogo').textContent = shortUrl;
+			document.getElementById('pageLogoInput').value = '';
+			
+			alert('Page logo updated GLOBALLY! All visitors will see this change.');
+		}
+
+		async function updateBio() {
+			const bio = document.getElementById('bioTextInput').value.trim();
+			if (!bio) {
+				alert('Please enter a bio');
+				return;
+			}
+
+			// Save GLOBALLY for ALL users
+			await saveGlobalSetting('bioText', bio);
+			
+			// Update bio immediately
+			const bioElement = document.querySelector('.bio');
+			if (bioElement) {
+				bioElement.textContent = bio;
+			}
+			
+			// Update current settings display
+			document.getElementById('currentBio').textContent = bio.length > 30 ? bio.substring(0, 30) + '...' : bio;
+			document.getElementById('bioTextInput').value = '';
+			
+			alert('Bio updated GLOBALLY! All visitors will see this change.');
+		}
+
+		async function updateAboutText() {
+			const aboutText = document.getElementById('aboutText').value.trim();
+			if (!aboutText) {
+				alert('Please enter about text');
+				return;
+			}
+
+			// Save GLOBALLY for ALL users
+			await saveGlobalSetting('aboutText', aboutText);
+			
+			// Update about text immediately
+			const aboutElement = document.getElementById('aboutTextContent');
+			if (aboutElement) {
+				aboutElement.textContent = aboutText;
+			}
+			
+			// Update current settings display
+			document.getElementById('currentAboutText').textContent = aboutText.length > 30 ? aboutText.substring(0, 30) + '...' : aboutText;
+			document.getElementById('aboutText').value = '';
+			
+			alert('About text updated GLOBALLY! All visitors will see this change.');
+		}
+
+		async function updateStreamingYear() {
+			const year = document.getElementById('streamingYear').value.trim();
+			if (!year) {
+				alert('Please enter a streaming year');
+				return;
+			}
+
+			// Save GLOBALLY for ALL users
+			await saveGlobalSetting('streamingYear', year);
+			
+			// Update streaming year immediately
+			const yearElement = document.getElementById('streamingYearStat');
+			if (yearElement) {
+				yearElement.textContent = `Streaming since ${year}`;
+			}
+			
+			// Update current settings display
+			document.getElementById('currentStreamingYear').textContent = year;
+			document.getElementById('streamingYear').value = '';
+			
+			alert('Streaming year updated GLOBALLY! All visitors will see this change.');
+		}
+
+		async function updateFollowerCount() {
+			const count = document.getElementById('followerCount').value.trim();
+			
+			// Save GLOBALLY for ALL users (empty string for API mode)
+			await saveGlobalSetting('followerCount', count);
+			
+			// Update followers immediately
+			const followerElement = document.getElementById('twitchFollowersStat');
+			if (followerElement) {
+				if (count) {
+					followerElement.innerHTML = `
+						<img src="https://images.seeklogo.com/logo-png/27/2/twitch-logo-png_seeklogo-274042.png" alt="Twitch"/>
+						${formatNumber(parseInt(count))} followers
+					`;
+				} else {
+					// Use API
+					updateTwitchFollowers();
+				}
+			}
+			
+			// Update current settings display
+			document.getElementById('currentFollowerCount').textContent = count || 'API';
+			document.getElementById('followerCount').value = '';
+			
+			alert(count ? 'Follower count updated GLOBALLY!' : 'Follower count set to use API GLOBALLY!');
+		}
+
+		async function updateSubscriberCount() {
+			const count = document.getElementById('subscriberCount').value.trim();
+			
+			// Save GLOBALLY for ALL users (empty string for API mode)
+			await saveGlobalSetting('subscriberCount', count);
+			
+			// Update subscribers immediately
+			const subscriberElement = document.getElementById('youtubeSubscribersStat');
+			if (subscriberElement) {
+				if (count) {
+					subscriberElement.innerHTML = `
+						<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/09/YouTube_full-color_icon_%282017%29.svg/2560px-YouTube_full-color_icon_%282017%29.svg.png" alt="YouTube"/>
+						${formatNumber(parseInt(count))} subs
+					`;
+				} else {
+					// Use API
+					updateYouTubeSubscribers();
+				}
+			}
+			
+			// Update current settings display
+			document.getElementById('currentSubscriberCount').textContent = count || 'API';
+			document.getElementById('subscriberCount').value = '';
+			
+			alert(count ? 'Subscriber count updated GLOBALLY!' : 'Subscriber count set to use API GLOBALLY!');
+		}
+
+		async function updateTwitchLink() {
+			const url = document.getElementById('twitchLink').value.trim();
+			if (!url) {
+				alert('Please enter a Twitch URL');
+				return;
+			}
+
+			await saveGlobalSetting('twitchLink', url);
+			updateSocialLink('twitch', url);
+			document.getElementById('twitchLink').value = '';
+			alert('Twitch link updated GLOBALLY!');
+		}
+
+		async function updateYouTubeLink() {
+			const url = document.getElementById('youtubeLink').value.trim();
+			if (!url) {
+				alert('Please enter a YouTube URL');
+				return;
+			}
+
+			await saveGlobalSetting('youtubeLink', url);
+			updateSocialLink('youtube', url);
+			document.getElementById('youtubeLink').value = '';
+			alert('YouTube link updated GLOBALLY!');
+		}
+
+		async function updateTikTokLink() {
+			const url = document.getElementById('tiktokLink').value.trim();
+			if (!url) {
+				alert('Please enter a TikTok URL');
+				return;
+			}
+
+			await saveGlobalSetting('tiktokLink', url);
+			updateSocialLink('tiktok', url);
+			document.getElementById('tiktokLink').value = '';
+			alert('TikTok link updated GLOBALLY!');
+		}
+
+		async function updateInstagramLink() {
+			const url = document.getElementById('instagramLink').value.trim();
+			if (!url) {
+				alert('Please enter an Instagram URL');
+				return;
+			}
+
+			await saveGlobalSetting('instagramLink', url);
+			updateSocialLink('instagram', url);
+			document.getElementById('instagramLink').value = '';
+			alert('Instagram link updated GLOBALLY!');
+		}
+
+		async function updateXLink() {
+			const url = document.getElementById('xLink').value.trim();
+			if (!url) {
+				alert('Please enter an X URL');
+				return;
+			}
+
+			await saveGlobalSetting('xLink', url);
+			updateSocialLink('x', url);
+			document.getElementById('xLink').value = '';
+			alert('X link updated GLOBALLY!');
+		}
+
+		async function updateRedditLink() {
+			const url = document.getElementById('redditLink').value.trim();
+			if (!url) {
+				alert('Please enter a Reddit URL');
+				return;
+			}
+
+			await saveGlobalSetting('redditLink', url);
+			updateSocialLink('reddit', url);
+			document.getElementById('redditLink').value = '';
+			alert('Reddit link updated GLOBALLY!');
+		}
+
+		function updateSocialLink(platform, url) {
+			// Update social bar links using specific IDs
+			const linkMap = {
+				'twitch': 'twitchSocialLink',
+				'youtube': 'youtubeSocialLink',
+				'tiktok': 'tiktokSocialLink',
+				'discord': 'discordSocialLink',
+				'instagram': 'instagramSocialLink',
+				'x': 'xSocialLink',
+				'reddit': 'redditSocialLink'
+			};
+			
+			const linkId = linkMap[platform.toLowerCase()];
+			if (linkId) {
+				const socialLink = document.getElementById(linkId);
+				if (socialLink) {
+					socialLink.href = url;
+				}
+			}
+		}
+
+		async function updateFollowButton() {
+			const text = document.getElementById('followButtonText').value.trim();
+			if (!text) {
+				alert('Please enter follow button text');
+				return;
+			}
+
+			await saveGlobalSetting('followButtonText', text);
+			
+			const followButton = document.getElementById('followButton');
+			if (followButton) {
+				followButton.innerHTML = `
+					<svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+						<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+						<circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+						<path d="m19 8 2 2-2 2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+						<path d="m21 10-7.5 0" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+					</svg>
+					${text}
+				`;
+			}
+			
+			document.getElementById('followButtonText').value = '';
+			alert('Follow button updated GLOBALLY!');
+		}
+
+		async function updateSubscribeButton() {
+			const text = document.getElementById('subscribeButtonText').value.trim();
+			if (!text) {
+				alert('Please enter subscribe button text');
+				return;
+			}
+
+			await saveGlobalSetting('subscribeButtonText', text);
+			
+			const subscribeButton = document.getElementById('subscribeButton');
+			if (subscribeButton) {
+				subscribeButton.innerHTML = `
+					<svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+						<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+						<circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+						<path d="m19 8 2 2-2 2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+						<path d="m21 10-7.5 0" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+					</svg>
+					${text}
+				`;
+			}
+			
+			document.getElementById('subscribeButtonText').value = '';
+			alert('Subscribe button updated GLOBALLY!');
+		}
+
+		async function updateSaturdayTime() {
+			const time = document.getElementById('saturdayTime').value.trim();
+			if (!time) {
+				alert('Please enter Saturday stream time');
+				return;
+			}
+
+			await saveGlobalSetting('saturdayTime', time);
+			
+			const saturdayElement = document.getElementById('saturdaySchedule');
+			if (saturdayElement) {
+				saturdayElement.textContent = `Saturday, ${time}`;
+			}
+			
+			document.getElementById('saturdayTime').value = '';
+			alert('Saturday schedule updated GLOBALLY!');
+		}
+
+		async function updateSundayTime() {
+			const time = document.getElementById('sundayTime').value.trim();
+			if (!time) {
+				alert('Please enter Sunday stream time');
+				return;
+			}
+
+			await saveGlobalSetting('sundayTime', time);
+			
+			const sundayElement = document.getElementById('sundaySchedule');
+			if (sundayElement) {
+				sundayElement.textContent = `Sunday, ${time}`;
+			}
+			
+			document.getElementById('sundayTime').value = '';
+			alert('Sunday schedule updated GLOBALLY!');
+		}
+
+		async function updateYouTubeVideo() {
+			const videoId = document.getElementById('youtubeVideoId').value.trim();
+			if (!videoId) {
+				alert('Please enter a YouTube video ID');
+				return;
+			}
+
+			// Validate video ID format (basic check)
+			if (videoId.length < 8 || videoId.length > 15) {
+				alert('Invalid YouTube video ID format. It should be 8-15 characters.');
+				return;
+			}
+
+			// Save GLOBALLY for ALL users
+			await saveGlobalSetting('youtube-video', videoId);
+			
+			// Update the YouTube embed immediately
+			updateYouTubeEmbed(videoId);
+			
+			// Update current settings display
+			document.getElementById('currentYouTubeVideo').textContent = videoId;
+			document.getElementById('youtubeVideoId').value = '';
+			
+			alert('YouTube video updated GLOBALLY! All visitors will see this video.');
+		}
+
+		async function updateFirebaseDatabase() {
+			const newDatabaseUrl = document.getElementById('firebaseDatabaseUrl').value.trim();
+			
+			if (!newDatabaseUrl) {
+				alert('Please enter a Firebase database URL');
+				return;
+			}
+			
+			// Validate URL format
+			if (!newDatabaseUrl.includes('firebaseapp.com') || !newDatabaseUrl.startsWith('https://')) {
+				alert('Invalid Firebase database URL format. Should be: https://your-project-default-rtdb.firebaseapp.com/');
+				return;
+			}
+			
+			// Confirm the change
+			const confirmed = confirm(`⚠️ Are you sure you want to switch to a new Firebase database?\n\nNew URL: ${newDatabaseUrl}\n\nThis will:\n- Save the new database URL\n- Reload the page\n- Use the new Firebase project for all settings\n\nContinue?`);
+			
+			if (!confirmed) return;
+			
+			try {
+				// Store the new database URL encrypted in localStorage
+				const encryptedUrl = encryptUrl(newDatabaseUrl);
+				localStorage.setItem('encryptedFirebaseUrl', encryptedUrl);
+				
+				// Remove old unencrypted storage if it exists
+				localStorage.removeItem('customFirebaseUrl');
+				
+				alert('Firebase database URL updated and encrypted! The page will now reload with the new database.');
+				
+				// Reload the page to initialize with new database
+				window.location.reload();
+				
+			} catch (error) {
+				console.error('Error updating Firebase database:', error);
+				alert('Error updating Firebase database. Please try again.');
+			}
+		}
+
+		// Website Effects Functions
+		function toggleColorEffect() {
+			const isChecked = document.getElementById('colorEffectToggle').checked;
+			if (isChecked) {
+				document.body.classList.add('effect-color');
+			} else {
+				document.body.classList.remove('effect-color');
+			}
+			updateCombinedFilters();
+		}
+
+		function toggleGrayscale() {
+			const isChecked = document.getElementById('grayscaleToggle').checked;
+			if (isChecked) {
+				document.body.classList.add('effect-grayscale');
+			} else {
+				document.body.classList.remove('effect-grayscale');
+			}
+			updateCombinedFilters();
+		}
+
+		function toggleBlur() {
+			const isChecked = document.getElementById('blurToggle').checked;
+			if (isChecked) {
+				document.body.classList.add('effect-blur-bg');
+			} else {
+				document.body.classList.remove('effect-blur-bg');
+			}
+		}
+
+		function toggleSepia() {
+			const isChecked = document.getElementById('sepiaToggle').checked;
+			if (isChecked) {
+				document.body.classList.add('effect-sepia');
+			} else {
+				document.body.classList.remove('effect-sepia');
+			}
+			updateCombinedFilters();
+		}
+
+		function toggleInvert() {
+			const isChecked = document.getElementById('invertToggle').checked;
+			if (isChecked) {
+				document.body.classList.add('effect-invert');
+			} else {
+				document.body.classList.remove('effect-invert');
+			}
+			updateCombinedFilters();
+		}
+
+		function toggleBrightness() {
+			const isChecked = document.getElementById('brightnessToggle').checked;
+			if (isChecked) {
+				document.body.classList.add('effect-brightness');
+			} else {
+				document.body.classList.remove('effect-brightness');
+			}
+			updateCombinedFilters();
+		}
+
+		function updateCombinedFilters() {
+			// Build combined filter string for complex combinations
+			const effects = [];
+			
+			if (document.body.classList.contains('effect-invert')) {
+				effects.push('invert(1)');
+			}
+			if (document.body.classList.contains('effect-color')) {
+				effects.push('hue-rotate(45deg)');
+				effects.push('saturate(1.5)');
+			}
+			if (document.body.classList.contains('effect-grayscale')) {
+				effects.push('grayscale(100%)');
+			}
+			if (document.body.classList.contains('effect-sepia')) {
+				effects.push('sepia(70%)');
+			}
+			if (document.body.classList.contains('effect-brightness')) {
+				effects.push('brightness(1.3)');
+			}
+
+			// Apply combined filter if we have multiple effects
+			if (effects.length > 1) {
+				document.body.style.filter = effects.join(' ');
+			} else if (effects.length === 1) {
+				document.body.style.filter = effects[0];
+			} else {
+				document.body.style.filter = '';
+			}
+		}
+
+		function resetAllEffects() {
+			// Reset all checkboxes
+			document.getElementById('colorEffectToggle').checked = false;
+			document.getElementById('grayscaleToggle').checked = false;
+			document.getElementById('blurToggle').checked = false;
+			document.getElementById('sepiaToggle').checked = false;
+			document.getElementById('invertToggle').checked = false;
+			document.getElementById('brightnessToggle').checked = false;
+			
+			// Remove all effect classes
+			document.body.classList.remove('effect-color', 'effect-grayscale', 'effect-blur-bg', 'effect-sepia', 'effect-invert', 'effect-brightness');
+			document.body.style.filter = '';
+			
+			alert('All visual effects have been reset!');
+		}
+
+		async function saveEffectsGlobally() {
+			const effects = {
+				color: document.getElementById('colorEffectToggle').checked,
+				grayscale: document.getElementById('grayscaleToggle').checked,
+				blur: document.getElementById('blurToggle').checked,
+				sepia: document.getElementById('sepiaToggle').checked,
+				invert: document.getElementById('invertToggle').checked,
+				brightness: document.getElementById('brightnessToggle').checked
+			};
+
+			// Save GLOBALLY for ALL users
+			await saveGlobalSetting('websiteEffects', JSON.stringify(effects));
+			
+			alert('Website effects saved GLOBALLY! All visitors will see these effects.');
+		}
+
+		async function loadGlobalEffects() {
+			const savedEffects = await loadGlobalSetting('websiteEffects');
+			if (savedEffects && savedEffects !== 'N/A') {
+				try {
+					const effects = JSON.parse(savedEffects);
+					
+					// Apply saved effects
+					document.getElementById('colorEffectToggle').checked = effects.color || false;
+					document.getElementById('grayscaleToggle').checked = effects.grayscale || false;
+					document.getElementById('blurToggle').checked = effects.blur || false;
+					document.getElementById('sepiaToggle').checked = effects.sepia || false;
+					document.getElementById('invertToggle').checked = effects.invert || false;
+					document.getElementById('brightnessToggle').checked = effects.brightness || false;
+					
+					// Apply the effects to the page
+					if (effects.color) document.body.classList.add('effect-color');
+					if (effects.grayscale) document.body.classList.add('effect-grayscale');
+					if (effects.blur) document.body.classList.add('effect-blur-bg');
+					if (effects.sepia) document.body.classList.add('effect-sepia');
+					if (effects.invert) document.body.classList.add('effect-invert');
+					if (effects.brightness) document.body.classList.add('effect-brightness');
+					
+					updateCombinedFilters();
+					
+					console.log('🎨 Applied global website effects:', effects);
+				} catch (e) {
+					console.error('Error parsing saved effects:', e);
+				}
+			}
+		}
+
+		// Add reset functions
+		async function resetToDefaults() {
+			if (confirm('Are you sure you want to reset all settings to defaults GLOBALLY? This will affect ALL visitors and cannot be undone.')) {
+				// Clear GLOBAL settings
+				await saveGlobalSetting('display-name', 'N/A');
+				await saveGlobalSetting('username', 'N/A');
+				await saveGlobalSetting('twitchStatus', ''); // Clear Twitch status
+				await saveGlobalSetting('discordLink', 'N/A'); // Reset Discord link
+				await saveGlobalSetting('profile-pic', 'N/A');
+				await saveGlobalSetting('background', 'N/A');
+				await saveGlobalSetting('youtube-video', 'N/A');
+				
+				// Reset names to defaults immediately
+				const nameElements = document.querySelectorAll('.name, h1, .profile-name');
+				nameElements.forEach(element => {
+					element.textContent = 'ilyambr';
+				});
+				document.title = 'ilyambr';
+				
+				const usernameElements = document.querySelectorAll('.username, .handle, .user-handle');
+				usernameElements.forEach(element => {
+					element.textContent = '@ilyambrr';
+				});
+				
+				// Reset all elements that might contain the old username
+				const allElements = document.querySelectorAll('*');
+				allElements.forEach(element => {
+					if (element.textContent && !element.textContent.includes('@ilyambrr') && element.textContent.includes('@')) {
+						element.textContent = element.textContent.replace(/@[a-zA-Z0-9_]+/g, '@ilyambrr');
+					}
+				});
+				
+				// Reset to defaults immediately
+				document.querySelector('.avatar img').src = 'https://ilyambr.me/img/avatar.webp';
+				document.body.style.background = `url('https://ilyambr.me/img/bg.jpg') center / cover fixed no-repeat, linear-gradient(180deg, var(--bg-1), var(--bg-2))`;
+				
+				// Reset YouTube to auto-latest
+				loadLatestYouTubeVideo();
+				
+				// Hide Twitch status badge
+				const statusBadge = document.getElementById('twitchStatusBadge');
+				if (statusBadge) {
+					statusBadge.style.display = 'none';
+				}
+				
+				// Reset Discord links to default
+				const discordLinks = document.querySelectorAll('a[href*="discord"]');
+				discordLinks.forEach(link => {
+					if (link.href.includes('ilyambr.me/discord')) {
+						link.href = 'https://ilyambr.me/discord';
+					} else {
+						link.href = 'https://discord.gg/EK4nvAJPzc';
+					}
+				});
+				
+				// Update display
+				document.getElementById('currentDisplayName').textContent = 'N/A';
+				document.getElementById('currentUsername').textContent = 'N/A';
+				document.getElementById('currentTwitchStatus').textContent = 'None';
+				document.getElementById('twitchStatus').value = ''; // Reset selector
+				document.getElementById('currentDiscordLink').textContent = 'N/A';
+				document.getElementById('currentProfilePic').textContent = 'N/A';
+				document.getElementById('currentBackground').textContent = 'N/A';
+				document.getElementById('currentYouTubeVideo').textContent = 'N/A';
+				
+				alert('All settings have been reset to defaults GLOBALLY!');
+			}
+		}
+
+		// Close admin popups when clicking outside
+		document.addEventListener('click', function(event) {
+			const adminLoginPopup = document.getElementById('adminLoginPopup');
+			const adminPanelPopup = document.getElementById('adminPanelPopup');
+			
+			if (event.target === adminLoginPopup) {
+				closeAdminPopup('adminLoginPopup');
+			}
+			if (event.target === adminPanelPopup) {
+				closeAdminPopup('adminPanelPopup');
+			}
+		});
+
+		// Close admin popups with Escape key
+		document.addEventListener('keydown', function(event) {
+			if (event.key === 'Escape') {
+				closeAdminPopup('adminLoginPopup');
+				closeAdminPopup('adminPanelPopup');
+			}
+		});
+
+		// Failsafe: hide loading screen after 5 seconds no matter what
+		setTimeout(() => {
+			const loadingOverlay = document.getElementById('loadingOverlay');
+			if (loadingOverlay && !loadingOverlay.classList.contains('hide')) {
+				console.log('⚠️ failsafe triggered - hiding loading screen');
+				loadingOverlay.classList.add('hide');
+				setTimeout(() => {
+					loadingOverlay.style.display = 'none';
+				}, 600);
+			}
+		}, 5000);
+	</script>
+	</div> <!-- End page-content -->
 </body>
 </html>
