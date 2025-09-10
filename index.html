@@ -1677,6 +1677,34 @@
 						<button onclick="updateSubscribeButton()">Update</button>
 					</div>
 				</div>
+
+				<!-- Follow popup links management (inside panel) -->
+				<div class="admin-section">
+					<h4>Follow Popup Links</h4>
+					<div class="admin-setting">
+						<div style="display:flex; gap:10px; align-items:center;">
+							<input type="text" id="followAddHelper" placeholder="Use Add to choose logo, name, and link" disabled style="flex:1; opacity:.7;">
+							<button onclick="openAddActionLinkPopup('follow')">Add</button>
+							<button style="background: rgba(255,59,107,0.2); border-color: rgba(255,59,107,0.3);" onclick="clearActionLinks('follow')">Clear All</button>
+						</div>
+						<div id="followLinksList" style="margin-top:8px;"></div>
+						<small>Manage the links shown in the Follow popup.</small>
+					</div>
+				</div>
+
+				<!-- Subscribe popup links management (inside panel) -->
+				<div class="admin-section">
+					<h4>Subscribe Popup Links</h4>
+					<div class="admin-setting">
+						<div style="display:flex; gap:10px; align-items:center;">
+							<input type="text" id="subscribeAddHelper" placeholder="Use Add to choose logo, name, and link" disabled style="flex:1; opacity:.7;">
+							<button onclick="openAddActionLinkPopup('subscribe')">Add</button>
+							<button style="background: rgba(255,59,107,0.2); border-color: rgba(255,59,107,0.3);" onclick="clearActionLinks('subscribe')">Clear All</button>
+						</div>
+						<div id="subscribeLinksList" style="margin-top:8px;"></div>
+						<small>Manage the links shown in the Subscribe popup.</small>
+					</div>
+				</div>
 				
 				<div class="admin-section">
 					<h4>Schedule Settings</h4>
@@ -1889,36 +1917,9 @@
 							Reset All to Defaults
 						</button>
 					</div>
-				</div>
-			</div>
-
-			<!-- Follow popup links management -->
-			<div class="admin-section">
-				<h4>Follow Popup Links</h4>
-				<div class="admin-setting">
-					<div style="display:flex; gap:10px; align-items:center;">
-						<input type="text" id="followAddHelper" placeholder="Use Add to choose logo, name, and link" disabled style="flex:1; opacity:.7;">
-						<button onclick="openAddActionLinkPopup('follow')">Add</button>
 					</div>
-					<div id="followLinksList" style="margin-top:8px;"></div>
-					<small>Manage the links shown in the Follow popup.</small>
 				</div>
 			</div>
-
-			<!-- Subscribe popup links management -->
-			<div class="admin-section">
-				<h4>Subscribe Popup Links</h4>
-				<div class="admin-setting">
-					<div style="display:flex; gap:10px; align-items:center;">
-						<input type="text" id="subscribeAddHelper" placeholder="Use Add to choose logo, name, and link" disabled style="flex:1; opacity:.7;">
-						<button onclick="openAddActionLinkPopup('subscribe')">Add</button>
-					</div>
-					<div id="subscribeLinksList" style="margin-top:8px;"></div>
-					<small>Manage the links shown in the Subscribe popup.</small>
-				</div>
-			</div>
-		</div>
-	</div>
 
 	<!-- Add Action Link Popup -->
 	<div id="actionLinkPopup" class="popup-overlay">
@@ -2127,6 +2128,9 @@
 				// Render collaborators list and ensure tint rows state
 				renderCollaborators();
 				updateTintRows();
+				// Ensure action links lists are rendered inside panel
+				renderActionLinksList('follow');
+				renderActionLinksList('subscribe');
 				document.getElementById('adminPanelPopup').style.display = 'flex';
 				document.body.style.overflow = 'hidden';
 			} else {
@@ -2483,10 +2487,12 @@
 				followLinks.push(entry);
 				await saveGlobalSetting('followLinks', JSON.stringify(followLinks));
 				renderActionLinksList('follow');
+				renderActionPopupButtons('follow');
 			} else {
 				subscribeLinks.push(entry);
 				await saveGlobalSetting('subscribeLinks', JSON.stringify(subscribeLinks));
 				renderActionLinksList('subscribe');
+				renderActionPopupButtons('subscribe');
 			}
 			closePopup('actionLinkPopup');
 		}
@@ -2513,15 +2519,32 @@
 						followLinks.splice(idx, 1);
 						await saveGlobalSetting('followLinks', JSON.stringify(followLinks));
 						renderActionLinksList('follow');
+						renderActionPopupButtons('follow');
 					} else {
 						subscribeLinks.splice(idx, 1);
 						await saveGlobalSetting('subscribeLinks', JSON.stringify(subscribeLinks));
 						renderActionLinksList('subscribe');
+						renderActionPopupButtons('subscribe');
 					}
 				};
 				div.appendChild(btn);
 				container.appendChild(div);
 			});
+		}
+
+		function clearActionLinks(context) {
+			if (!confirm('Clear all links in this list?')) return;
+			if (context === 'follow') {
+				followLinks = [];
+				saveGlobalSetting('followLinks', JSON.stringify(followLinks));
+				renderActionLinksList('follow');
+				renderActionPopupButtons('follow');
+			} else {
+				subscribeLinks = [];
+				saveGlobalSetting('subscribeLinks', JSON.stringify(subscribeLinks));
+				renderActionLinksList('subscribe');
+				renderActionPopupButtons('subscribe');
+			}
 		}
 
 		function setPopupTitles(displayName) {
@@ -3197,6 +3220,8 @@
 			
 			// Also update the page title
 			document.title = displayName;
+			// Update popup titles
+			setPopupTitles(displayName);
 			
 			// Update current settings display
 			document.getElementById('currentDisplayName').textContent = displayName;
