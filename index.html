@@ -4,7 +4,7 @@
 	<meta charset="UTF-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1" />
 	<title>ilyambr</title>
-	<link rel="icon" type="image/x-icon" href="./favicon.ico">
+	<link rel="icon" type="image/x-icon" href="https://ilyambr.me/favicon.ico">
 	<link rel="preconnect" href="https://fonts.googleapis.com">
 	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 	<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Space+Grotesk:wght@400;600&display=swap" rel="stylesheet">
@@ -33,7 +33,7 @@
 
 		*{box-sizing:border-box; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;}
 		html,body{height:100%}
-		html{-webkit-filter:grayscale(100%); filter:grayscale(100%)}
+		html{padding:0; margin:0}
 		body{
 			margin:0;
 			font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,'Helvetica Neue',Arial,'Noto Sans',sans-serif;
@@ -818,38 +818,156 @@
 				height: 18px;
 			}
 		}
+
+		/* Hide elements until database loads */
+		.db-loading .name,
+		.db-loading .bio,
+		.db-loading .username,
+		.db-loading .handle,
+		.db-loading .user-handle,
+		.db-loading .about,
+		.db-loading .stat,
+		.db-loading .badge,
+		.db-loading .page-logo,
+		.db-loading .social-bar,
+		.db-loading .button,
+		.db-loading .schedule .slot {
+			opacity: 0.3;
+			pointer-events: none;
+		}
+
+		.db-loaded .name,
+		.db-loaded .bio,
+		.db-loaded .username,
+		.db-loaded .handle,
+		.db-loaded .user-handle,
+		.db-loaded .about,
+		.db-loaded .stat,
+		.db-loaded .badge,
+		.db-loaded .page-logo,
+		.db-loaded .social-bar,
+		.db-loaded .button,
+		.db-loaded .schedule .slot {
+			opacity: 1;
+			pointer-events: auto;
+			transition: opacity 0.5s ease;
+		}
+
+		/* Website Effects */
+		.effect-color {
+			filter: hue-rotate(45deg) saturate(1.5);
+		}
+		
+		.effect-grayscale {
+			filter: grayscale(100%);
+		}
+		
+		.effect-sepia {
+			filter: sepia(70%);
+		}
+		
+		.effect-invert {
+			filter: invert(1);
+		}
+		
+		.effect-brightness {
+			filter: brightness(1.3);
+		}
+		
+		.effect-blur-bg {
+			backdrop-filter: blur(8px);
+		}
+		
+		.effect-blur-bg .container {
+			background: rgba(0, 0, 0, 0.2);
+			backdrop-filter: blur(10px);
+		}
+		
+		/* Combined effects support */
+		.effect-color.effect-grayscale {
+			filter: hue-rotate(45deg) saturate(1.5) grayscale(100%);
+		}
+		
+		.effect-color.effect-sepia {
+			filter: hue-rotate(45deg) saturate(1.5) sepia(70%);
+		}
+		
+		.effect-grayscale.effect-sepia {
+			filter: grayscale(100%) sepia(70%);
+		}
+		
+		.effect-color.effect-brightness {
+			filter: hue-rotate(45deg) saturate(1.5) brightness(1.3);
+		}
+		
+		.effect-grayscale.effect-brightness {
+			filter: grayscale(100%) brightness(1.3);
+		}
+		
+		.effect-sepia.effect-brightness {
+			filter: sepia(70%) brightness(1.3);
+		}
+		
+		.effect-invert.effect-color {
+			filter: invert(1) hue-rotate(45deg) saturate(1.5);
+		}
+		
+		.effect-invert.effect-grayscale {
+			filter: invert(1) grayscale(100%);
+		}
+		
+		.effect-invert.effect-sepia {
+			filter: invert(1) sepia(70%);
+		}
+		
+		.effect-invert.effect-brightness {
+			filter: invert(1) brightness(1.3);
+		}
+		
+		/* Triple+ effect combinations */
+		.effect-color.effect-grayscale.effect-brightness {
+			filter: hue-rotate(45deg) saturate(1.5) grayscale(100%) brightness(1.3);
+		}
+		
+		.effect-color.effect-sepia.effect-brightness {
+			filter: hue-rotate(45deg) saturate(1.5) sepia(70%) brightness(1.3);
+		}
+		
+		.effect-grayscale.effect-sepia.effect-brightness {
+			filter: grayscale(100%) sepia(70%) brightness(1.3);
+		}
 	</style>
 </head>
-<body>
+<body class="db-loading">
 	<!-- Simple loading screen -->
 	<div class="loading-overlay" id="loadingOverlay">
 		<div class="loading-spinner"></div>
 	</div>
 
 	<div class="page-logo">
-		<img src="https://ilyambr.me/Screenshot_2025-02-06_010238_edited_edited.png" alt="Logo" />
+		<img id="pageLogoImg" src="https://ilyambr.me/Screenshot_2025-02-06_010238_edited_edited.png" alt="Logo" />
 	</div>
 	
 	<ul class="social-bar" aria-label="Social Bar">
-		<li><a href="https://www.twitch.tv/ilyambrr" target="_blank" rel="noreferrer noopener" class="social-link" aria-label="Twitch">
+		<li><a id="twitchSocialLink" href="https://www.twitch.tv/ilyambrr" target="_blank" rel="noreferrer noopener" class="social-link" aria-label="Twitch">
 			<img alt="Twitch" src="https://static.wixstatic.com/media/11062b_33ebef7d3c404a0baa46a0ec8b83cd51~mv2.png/v1/fill/w_20,h_20,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/11062b_33ebef7d3c404a0baa46a0ec8b83cd51~mv2.png">
 		</a></li>
-		<li><a href="https://www.youtube.com/@ilyambr" target="_blank" rel="noreferrer noopener" class="social-link" aria-label="Youtube">
+		<li><a id="youtubeSocialLink" href="https://www.youtube.com/@ilyambr" target="_blank" rel="noreferrer noopener" class="social-link" aria-label="Youtube">
 			<img alt="Youtube" src="https://static.wixstatic.com/media/11062b_30de4e7217e64dfdadc3ea03beea7b94~mv2.png/v1/fill/w_20,h_20,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/11062b_30de4e7217e64dfdadc3ea03beea7b94~mv2.png">
 		</a></li>
-		<li><a href="https://www.tiktok.com/@ilyambr_" target="_blank" rel="noreferrer noopener" class="social-link" aria-label="TikTok">
+		<li><a id="tiktokSocialLink" href="https://www.tiktok.com/@ilyambr_" target="_blank" rel="noreferrer noopener" class="social-link" aria-label="TikTok">
 			<img alt="TikTok" src="https://static.wixstatic.com/media/11062b_7fc95bac711041dcb9691b6a09192a84~mv2.png/v1/fill/w_20,h_20,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/11062b_7fc95bac711041dcb9691b6a09192a84~mv2.png">
 		</a></li>
-		<li><a href="https://discord.gg/EK4nvAJPzc" target="_blank" rel="noreferrer noopener" class="social-link discord-social-link" aria-label="Discord">
+		<li><a id="discordSocialLink" href="https://discord.gg/EK4nvAJPzc" target="_blank" rel="noreferrer noopener" class="social-link discord-social-link" aria-label="Discord">
 			<img alt="Discord" src="https://static.wixstatic.com/media/11062b_f642c87820384bd6b2a7c95d10b73a22~mv2.png/v1/fill/w_20,h_20,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/11062b_f642c87820384bd6b2a7c95d10b73a22~mv2.png">
 		</a></li>
-		<li><a href="https://www.instagram.com/ilyambr_/" target="_blank" rel="noreferrer noopener" class="social-link" aria-label="Instagram">
+		<li><a id="instagramSocialLink" href="https://www.instagram.com/ilyambr_/" target="_blank" rel="noreferrer noopener" class="social-link" aria-label="Instagram">
 			<img alt="Instagram" src="https://static.wixstatic.com/media/11062b_ca1d837ce7194421b781ee7384061a8e~mv2.png/v1/fill/w_20,h_20,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/11062b_ca1d837ce7194421b781ee7384061a8e~mv2.png">
 		</a></li>
-		<li><a href="https://x.com/ilyambrr" target="_blank" rel="noreferrer noopener" class="social-link" aria-label="X">
+		<li><a id="xSocialLink" href="https://x.com/ilyambrr" target="_blank" rel="noreferrer noopener" class="social-link" aria-label="X">
 			<img alt="X" src="https://static.wixstatic.com/media/11062b_bc7125385fcf422cad29fbe20a2b237c~mv2.png/v1/fill/w_20,h_20,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/11062b_bc7125385fcf422cad29fbe20a2b237c~mv2.png">
 		</a></li>
-		<li><a href="https://www.reddit.com/user/ilyambr/" target="_blank" rel="noreferrer noopener" class="social-link" aria-label="Reddit">
+		<li><a id="redditSocialLink" href="https://www.reddit.com/user/ilyambr/" target="_blank" rel="noreferrer noopener" class="social-link" aria-label="Reddit">
 			<img alt="Reddit" src="https://static.wixstatic.com/media/11062b_1b825ed041384249b8d50464cf9de627~mv2.png/v1/fill/w_20,h_20,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/11062b_1b825ed041384249b8d50464cf9de627~mv2.png">
 		</a></li>
 	</ul>
@@ -867,30 +985,30 @@
 					<div class="name">ilyambr</div>
 					<div class="username">@ilyambrr</div>
 				</div>
-				<div class="bio">just give me a year max.....</div>
+				<div class="bio" id="bioText">just give me a year max.....</div>
 				<div class="badges">
 					<div class="badge twitch-status-badge" id="twitchStatusBadge" style="display: none;">Affiliate</div>
 				</div>
 				<div class="stats">
-					<div class="stat">
+					<div class="stat" id="twitchFollowersStat">
 						<img src="https://images.seeklogo.com/logo-png/27/2/twitch-logo-png_seeklogo-274042.png" alt="Twitch"/>
 						N/A followers
 					</div>
-					<div class="stat">
+					<div class="stat" id="youtubeSubscribersStat">
 						<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/09/YouTube_full-color_icon_%282017%29.svg/2560px-YouTube_full-color_icon_%282017%29.svg.png" alt="YouTube"/>
 						N/A subs
 					</div>
-					<div class="stat">Streaming since 2024</div>
+					<div class="stat" id="streamingYearStat">Streaming since 2024</div>
 				</div>
 			</div>
 			<div class="actions">
-				<a class="button" href="javascript:void(0)" onclick="openPopup('followPopup')">
+				<a class="button" id="followButton" href="javascript:void(0)" onclick="openPopup('followPopup')">
 					<svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
 						<path d="M12 21s-8-4.5-8-11a5 5 0 0 1 9-3 5 5 0 0 1 9 3c0 6.5-10 11-10 11z" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
 					</svg>
 					Follow
 				</a>
-				<a class="button secondary" href="javascript:void(0)" onclick="openPopup('subscribePopup')">
+				<a class="button secondary" id="subscribeButton" href="javascript:void(0)" onclick="openPopup('subscribePopup')">
 					<svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
 						<path d="M4 12h16M12 4v16" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
 					</svg>
@@ -923,8 +1041,8 @@
 
 			<aside class="card">
 				<h3>About</h3>
-				<div class="about">
-					i make stuff, i stream, that's it really. just trying to make and do stuff i enjoy. appreciate you for visiting my website, make sure to join the discord and watch the streams 🫶
+				<div class="about" id="aboutSection">
+					<span id="aboutTextContent">i make stuff, i stream, that's it really. just trying to make and do stuff i enjoy. appreciate you for visiting my website, make sure to join the discord and watch the streams 🫶</span>
 					<a class="discord-link discord-about-link" href="https://ilyambr.me/discord" target="_blank" rel="noopener">
 						<img src="https://thumbnail.imgbin.com/2/21/7/discord-icon-blue-discord-logo-for-chatting-and-communication-RA6Qd2f8_t.jpg" alt="Discord"/>
 						Discord
@@ -933,11 +1051,11 @@
 				<h3 style="margin-top:18px">Schedule</h3>
 				<div class="schedule">
 					<div class="slot">
-						<span class="day">Saturday, 5:00PM</span>
+						<span class="day" id="saturdaySchedule">Saturday, 5:00PM</span>
 						<span class="time" id="nextSaturday">Loading...</span>
 					</div>
 					<div class="slot">
-						<span class="day">Sunday, 6:00PM</span>
+						<span class="day" id="sundaySchedule">Sunday, 6:00PM</span>
 						<span class="time" id="nextSunday">Loading...</span>
 					</div>
 				</div>
@@ -1452,6 +1570,118 @@
 				</div>
 				
 				<div class="admin-section">
+					<h4>Page Logo Settings</h4>
+					<div class="admin-setting">
+						<label for="pageLogo">Page Logo URL:</label>
+						<input type="url" id="pageLogo" placeholder="https://example.com/logo.svg">
+						<button onclick="updatePageLogo()">Update</button>
+						<small>Logo that appears in the top-left corner</small>
+					</div>
+				</div>
+				
+				<div class="admin-section">
+					<h4>Bio & About Settings</h4>
+					<div class="admin-setting">
+						<label for="bioText">Bio:</label>
+						<input type="text" id="bioText" placeholder="just give me a year max....." maxlength="100">
+						<button onclick="updateBio()">Update</button>
+						<small>Short bio text under your name</small>
+					</div>
+					<div class="admin-setting">
+						<label for="aboutText">About Me:</label>
+						<textarea id="aboutText" placeholder="i make stuff, i stream, that's it really..." maxlength="500" rows="3"></textarea>
+						<button onclick="updateAboutText()">Update</button>
+						<small>About section description</small>
+					</div>
+					<div class="admin-setting">
+						<label for="streamingYear">Started Streaming Year:</label>
+						<input type="number" id="streamingYear" placeholder="2024" min="2000" max="2030">
+						<button onclick="updateStreamingYear()">Update</button>
+						<small>Year you started streaming</small>
+					</div>
+				</div>
+				
+				<div class="admin-section">
+					<h4>Stats Settings</h4>
+					<div class="admin-setting">
+						<label for="followerCount">Twitch Followers:</label>
+						<input type="number" id="followerCount" placeholder="1234" min="0">
+						<button onclick="updateFollowerCount()">Update</button>
+						<small>Custom follower count (leave empty for API)</small>
+					</div>
+					<div class="admin-setting">
+						<label for="subscriberCount">YouTube Subscribers:</label>
+						<input type="number" id="subscriberCount" placeholder="5678" min="0">
+						<button onclick="updateSubscriberCount()">Update</button>
+						<small>Custom subscriber count (leave empty for API)</small>
+					</div>
+				</div>
+				
+				<div class="admin-section">
+					<h4>Social Links</h4>
+					<div class="admin-setting">
+						<label for="twitchLink">Twitch URL:</label>
+						<input type="url" id="twitchLink" placeholder="https://twitch.tv/ilyambrr">
+						<button onclick="updateTwitchLink()">Update</button>
+					</div>
+					<div class="admin-setting">
+						<label for="youtubeLink">YouTube URL:</label>
+						<input type="url" id="youtubeLink" placeholder="https://www.youtube.com/@ilyambr">
+						<button onclick="updateYouTubeLink()">Update</button>
+					</div>
+					<div class="admin-setting">
+						<label for="tiktokLink">TikTok URL:</label>
+						<input type="url" id="tiktokLink" placeholder="https://www.tiktok.com/@ilyambr_">
+						<button onclick="updateTikTokLink()">Update</button>
+					</div>
+					<div class="admin-setting">
+						<label for="instagramLink">Instagram URL:</label>
+						<input type="url" id="instagramLink" placeholder="https://www.instagram.com/ilyambr">
+						<button onclick="updateInstagramLink()">Update</button>
+					</div>
+					<div class="admin-setting">
+						<label for="xLink">X (Twitter) URL:</label>
+						<input type="url" id="xLink" placeholder="https://x.com/ilyambr">
+						<button onclick="updateXLink()">Update</button>
+					</div>
+					<div class="admin-setting">
+						<label for="redditLink">Reddit URL:</label>
+						<input type="url" id="redditLink" placeholder="https://reddit.com/u/ilyambr">
+						<button onclick="updateRedditLink()">Update</button>
+					</div>
+				</div>
+				
+				<div class="admin-section">
+					<h4>Action Buttons</h4>
+					<div class="admin-setting">
+						<label for="followButtonText">Follow Button Text:</label>
+						<input type="text" id="followButtonText" placeholder="Follow" maxlength="20">
+						<button onclick="updateFollowButton()">Update</button>
+					</div>
+					<div class="admin-setting">
+						<label for="subscribeButtonText">Subscribe Button Text:</label>
+						<input type="text" id="subscribeButtonText" placeholder="Subscribe" maxlength="20">
+						<button onclick="updateSubscribeButton()">Update</button>
+					</div>
+				</div>
+				
+				<div class="admin-section">
+					<h4>Schedule Settings</h4>
+					<div class="admin-setting">
+						<label for="saturdayTime">Saturday Stream Time:</label>
+						<input type="text" id="saturdayTime" placeholder="5:00PM">
+						<button onclick="updateSaturdayTime()">Update</button>
+						<small>e.g., 5:00PM, 17:00, etc.</small>
+					</div>
+					<div class="admin-setting">
+						<label for="sundayTime">Sunday Stream Time:</label>
+						<input type="text" id="sundayTime" placeholder="6:00PM">
+						<button onclick="updateSundayTime()">Update</button>
+						<small>e.g., 6:00PM, 18:00, etc.</small>
+					</div>
+				</div>
+				
+				<div class="admin-section">
 					<h4>Discord Settings</h4>
 					<div class="admin-setting">
 						<label for="discordLink">Discord Invite Link:</label>
@@ -1485,12 +1715,81 @@
 					<div class="current-settings">
 						<p><strong>Display Name:</strong> <span id="currentDisplayName">N/A</span></p>
 						<p><strong>Username:</strong> <span id="currentUsername">N/A</span></p>
+						<p><strong>Bio:</strong> <span id="currentBio">N/A</span></p>
+						<p><strong>About Text:</strong> <span id="currentAboutText">N/A</span></p>
+						<p><strong>Streaming Year:</strong> <span id="currentStreamingYear">N/A</span></p>
+						<p><strong>Page Logo:</strong> <span id="currentPageLogo">N/A</span></p>
 						<p><strong>Twitch Status:</strong> <span id="currentTwitchStatus">None</span></p>
+						<p><strong>Follower Count:</strong> <span id="currentFollowerCount">API</span></p>
+						<p><strong>Subscriber Count:</strong> <span id="currentSubscriberCount">API</span></p>
 						<p><strong>Discord Link:</strong> <span id="currentDiscordLink">N/A</span></p>
 						<p><strong>Profile Picture:</strong> <span id="currentProfilePic">N/A</span></p>
 						<p><strong>Background:</strong> <span id="currentBackground">N/A</span></p>
 						<p><strong>YouTube Video:</strong> <span id="currentYouTubeVideo">N/A</span></p>
+						<p><strong>Firebase Database:</strong> <span id="currentFirebaseUrl">Loading...</span></p>
 					</div>
+					
+					<div class="admin-setting">
+						<h3>🔥 Firebase Database Settings</h3>
+						<label for="firebaseDatabaseUrl">Database URL:</label>
+						<input type="text" id="firebaseDatabaseUrl" placeholder="https://your-project-default-rtdb.firebaseapp.com/" />
+						<button onclick="updateFirebaseDatabase()">Switch Database</button>
+						<div style="margin-top: 10px; padding: 10px; background: rgba(255,255,255,0.1); border-radius: 5px; font-size: 12px;">
+							<strong>⚠️ Warning:</strong> Switching database will reload the page and use the new Firebase project for all settings.<br>
+							<strong>🔐 Security:</strong> Database URLs are encrypted before storage.
+						</div>
+					</div>
+					
+					<div class="admin-setting">
+						<h3>🎨 Website Effects</h3>
+						<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+							<div>
+								<label style="display: flex; align-items: center; gap: 8px;">
+									<input type="checkbox" id="colorEffectToggle" onchange="toggleColorEffect()">
+									<span>🌈 Color Effect</span>
+								</label>
+							</div>
+							<div>
+								<label style="display: flex; align-items: center; gap: 8px;">
+									<input type="checkbox" id="grayscaleToggle" checked onchange="toggleGrayscale()">
+									<span>⚫ Grayscale</span>
+								</label>
+							</div>
+							<div>
+								<label style="display: flex; align-items: center; gap: 8px;">
+									<input type="checkbox" id="blurToggle" onchange="toggleBlur()">
+									<span>🌫️ Blur Background</span>
+								</label>
+							</div>
+							<div>
+								<label style="display: flex; align-items: center; gap: 8px;">
+									<input type="checkbox" id="sepiaToggle" onchange="toggleSepia()">
+									<span>📸 Sepia Effect</span>
+								</label>
+							</div>
+							<div>
+								<label style="display: flex; align-items: center; gap: 8px;">
+									<input type="checkbox" id="invertToggle" onchange="toggleInvert()">
+									<span>🔄 Invert Colors</span>
+								</label>
+							</div>
+							<div>
+								<label style="display: flex; align-items: center; gap: 8px;">
+									<input type="checkbox" id="brightnessToggle" onchange="toggleBrightness()">
+									<span>☀️ High Brightness</span>
+								</label>
+							</div>
+						</div>
+						<div style="display: flex; gap: 10px;">
+							<button onclick="resetAllEffects()" style="background: linear-gradient(90deg, #ff6b6b, #ee5a24); flex: 1;">
+								Reset All Effects
+							</button>
+							<button onclick="saveEffectsGlobally()" style="background: linear-gradient(90deg, #00d2d3, #54a0ff); flex: 1;">
+								Save Effects Globally
+							</button>
+						</div>
+					</div>
+					
 					<div class="admin-setting" style="margin-top: 15px;">
 						<button onclick="resetToDefaults()" style="background: linear-gradient(90deg, #ff4757, #ff3838); border-color: rgba(255, 71, 87, 0.3);">
 							Reset All to Defaults
@@ -1614,16 +1913,40 @@
 	</script>
 
 	<script>
+		// Simple encryption/decryption functions for Firebase URL
+		function encryptUrl(url) {
+			// Simple Base64 encoding with additional obfuscation
+			const encoded = btoa(url);
+			return encoded.split('').reverse().join('') + 'fb_enc';
+		}
+		
+		function decryptUrl(encryptedUrl) {
+			try {
+				if (!encryptedUrl.endsWith('fb_enc')) return null;
+				const reversed = encryptedUrl.slice(0, -6).split('').reverse().join('');
+				return atob(reversed);
+			} catch (e) {
+				return null;
+			}
+		}
+		
 		// Firebase Configuration (from your Firebase project)
+		// Check for encrypted custom database URL in localStorage
+		const encryptedUrl = localStorage.getItem('encryptedFirebaseUrl');
+		const customDatabaseUrl = encryptedUrl ? decryptUrl(encryptedUrl) : null;
+		const defaultDatabaseUrl = "https://ilyambr-45403-default-rtdb.firebaseio.com";
+		
 		const firebaseConfig = {
 			apiKey: "AIzaSyCTyk_sZYCXFsFOQK_faVQ5KQiQNtK1Q0",
 			authDomain: "ilyambr-45403.firebaseapp.com",
-			databaseURL: "https://ilyambr-45403-default-rtdb.firebaseio.com",
+			databaseURL: customDatabaseUrl || defaultDatabaseUrl,
 			projectId: "ilyambr-45403",
 			storageBucket: "ilyambr-45403.firebasestorage.app",
 			messagingSenderId: "826687105713",
 			appId: "1:826687105713:web:a5e0b97818a2bf91da5098"
 		};
+
+		console.log('🔥 Using Firebase database:', firebaseConfig.databaseURL);
 
 		// Initialize Firebase
 		let database = null;
@@ -1712,33 +2035,55 @@
 
 		// Initialize Google Sign-In when the page loads
 		window.onload = async function() {
+			console.log('🔑 Initializing OAuth system...');
+			
 			// Check for existing valid session first
 			checkExistingSession();
 			
-			// Now we have a valid Google Client ID, so use proper Google OAuth
-			if (typeof google !== 'undefined' && google.accounts) {
-				google.accounts.id.initialize({
-					client_id: GOOGLE_CLIENT_ID,
-					callback: handleCredentialResponse
-				});
+			// Wait a bit for Google API to fully load
+			setTimeout(() => {
+				console.log('🔍 Checking Google API availability...');
+				console.log('Google object exists:', typeof google !== 'undefined');
+				console.log('Google accounts exists:', typeof google !== 'undefined' && google.accounts);
+				
+				// Now we have a valid Google Client ID, so use proper Google OAuth
+				if (typeof google !== 'undefined' && google.accounts) {
+					console.log('✅ Google API loaded successfully, initializing OAuth...');
+					
+					try {
+						google.accounts.id.initialize({
+							client_id: GOOGLE_CLIENT_ID,
+							callback: handleCredentialResponse,
+							auto_select: false,
+							cancel_on_tap_outside: false
+						});
 
-				google.accounts.id.renderButton(
-					document.getElementById("googleSignIn"),
-					{ 
-						theme: "outline", 
-						size: "large",
-						text: "sign_in_with",
-						width: 250
+						console.log('✅ Google OAuth initialized successfully');
+
+						const signInElement = document.getElementById("googleSignIn");
+						if (signInElement) {
+							google.accounts.id.renderButton(
+								signInElement,
+								{ 
+									theme: "outline", 
+									size: "large",
+									text: "sign_in_with",
+									width: 250
+								}
+							);
+							console.log('✅ Google Sign-In button rendered');
+						} else {
+							console.error('❌ Google Sign-In element not found');
+						}
+					} catch (error) {
+						console.error('❌ Error initializing Google OAuth:', error);
+						setupFallbackAuth();
 					}
-				);
-			} else {
-				// Fallback for when Google API isn't loaded
-				document.getElementById("googleSignIn").onclick = fallbackGoogleSignIn;
-				document.getElementById("googleSignIn").innerHTML = `
-					<img src="https://developers.google.com/identity/images/g-logo.png" alt="Google"/>
-					Sign in with Google (Fallback)
-				`;
-			}
+				} else {
+					console.warn('⚠️ Google API not available, using fallback');
+					setupFallbackAuth();
+				}
+			}, 1000); // Wait 1 second for Google API to load
 			
 			// Load existing settings from Firebase/localStorage (now properly awaited)
 			try {
@@ -1747,7 +2092,33 @@
 			} catch (error) {
 				console.error('❌ Error loading settings:', error);
 			}
+			
+			// Apply default grayscale effect since checkbox is checked by default
+			document.body.classList.add('effect-grayscale');
+			updateCombinedFilters();
 		};
+
+		function setupFallbackAuth() {
+			console.log('🔄 Setting up fallback authentication...');
+			const signInElement = document.getElementById("googleSignIn");
+			if (signInElement) {
+				signInElement.onclick = fallbackGoogleSignIn;
+				signInElement.innerHTML = `
+					<img src="https://developers.google.com/identity/images/g-logo.png" alt="Google" style="width: 20px; height: 20px; margin-right: 8px;"/>
+					Sign in with Google (Fallback)
+				`;
+				signInElement.style.display = 'flex';
+				signInElement.style.alignItems = 'center';
+				signInElement.style.justifyContent = 'center';
+				signInElement.style.padding = '10px 20px';
+				signInElement.style.border = '1px solid #dadce0';
+				signInElement.style.borderRadius = '4px';
+				signInElement.style.backgroundColor = '#fff';
+				signInElement.style.color = '#3c4043';
+				signInElement.style.cursor = 'pointer';
+				console.log('✅ Fallback auth button set up');
+			}
+		}
 
 		function checkExistingSession() {
 			const sessionData = sessionStorage.getItem('admin-session');
@@ -1783,18 +2154,46 @@
 		}
 
 		function fallbackGoogleSignIn() {
-			// Simple email verification for demonstration
-			const email = prompt("Enter your email for admin access:");
+			console.log('🔄 Attempting fallback Google Sign-In...');
+			
+			// For file:// protocol, show a message about domain restrictions
+			if (window.location.protocol === 'file:') {
+				const useDemo = confirm(`⚠️ OAuth Limitation Detected\n\nGoogle OAuth doesn't work with file:// protocol for security reasons.\n\nTo test OAuth:\n1. Host this file on a web server (localhost:8000, behindthebonnet.me, etc.)\n2. Add your domain to Google Cloud Console authorized origins\n\nWould you like to use demo admin access for testing?\n\nClick OK for demo access, Cancel to try manual email entry.`);
+				
+				if (useDemo) {
+					// Simulate successful admin login for testing
+					const simulatedUser = {
+						name: 'Admin (Demo)',
+						email: AUTHORIZED_EMAIL,
+						picture: 'https://via.placeholder.com/40'
+					};
+					
+					console.log('🔧 Using simulated admin login for testing');
+					adminUser = simulatedUser;
+					isAdminLoggedIn = true;
+					showLoginSuccess();
+					setTimeout(() => {
+						closeAdminPopup('adminLoginPopup');
+						openAdminLogin(); // This will now open the admin panel
+					}, 1000);
+					return;
+				}
+			}
+			
+			// Manual email verification for demonstration/testing
+			const currentDomain = window.location.origin || window.location.protocol + '//' + window.location.host;
+			const email = prompt(`Enter your email for admin access:\n\nNote: Only ${AUTHORIZED_EMAIL} is authorized.\n\nCurrent domain: ${currentDomain}\n\nIf OAuth isn't working, this might be due to:\n• Domain not authorized in Google Cloud Console\n• Missing HTTPS (required for OAuth)\n• CORS restrictions\n\nFor behindthebonnet.me: Make sure to add the domain to Google Cloud Console authorized origins.`);
+			
 			if (email === AUTHORIZED_EMAIL) {
-				adminUser = { email: email, name: "Admin User" };
+				adminUser = { email: email, name: "Admin User (Manual)" };
 				isAdminLoggedIn = true;
 				showLoginSuccess();
 				setTimeout(() => {
 					closeAdminPopup('adminLoginPopup');
 					openAdminLogin(); // This will now open the admin panel
 				}, 1000);
-			} else {
-				showLoginError("Unauthorized email address");
+			} else if (email) {
+				showLoginError(`Unauthorized email address.\n\nOnly ${AUTHORIZED_EMAIL} is authorized for admin access.`);
 			}
 		}
 
@@ -1912,6 +2311,22 @@
 			const savedPic = await loadGlobalSetting('profile-pic');
 			const savedBg = await loadGlobalSetting('background');
 			const savedVideo = await loadGlobalSetting('youtube-video');
+			const savedPageLogo = await loadGlobalSetting('pageLogo');
+			const savedBio = await loadGlobalSetting('bioText');
+			const savedAboutText = await loadGlobalSetting('aboutText');
+			const savedStreamingYear = await loadGlobalSetting('streamingYear');
+			const savedFollowerCount = await loadGlobalSetting('followerCount');
+			const savedSubscriberCount = await loadGlobalSetting('subscriberCount');
+			const savedTwitchLink = await loadGlobalSetting('twitchLink');
+			const savedYouTubeLink = await loadGlobalSetting('youtubeLink');
+			const savedTikTokLink = await loadGlobalSetting('tiktokLink');
+			const savedInstagramLink = await loadGlobalSetting('instagramLink');
+			const savedXLink = await loadGlobalSetting('xLink');
+			const savedRedditLink = await loadGlobalSetting('redditLink');
+			const savedFollowButtonText = await loadGlobalSetting('followButtonText');
+			const savedSubscribeButtonText = await loadGlobalSetting('subscribeButtonText');
+			const savedSaturdayTime = await loadGlobalSetting('saturdayTime');
+			const savedSundayTime = await loadGlobalSetting('sundayTime');
 			
 			console.log('� Global display name:', savedDisplayName);
 			console.log('📧 Global username:', savedUsername);
@@ -1969,11 +2384,135 @@
 			// Apply saved Discord link
 			if (savedDiscordLink && savedDiscordLink !== 'N/A') {
 				console.log('💬 Applying global Discord link to ALL visitors:', savedDiscordLink);
-				const discordLinks = document.querySelectorAll('a[href*="discord"]');
-				discordLinks.forEach(link => {
-					link.href = savedDiscordLink;
-				});
-				console.log('✅ Discord links updated:', discordLinks.length, 'links updated');
+				const discordLink = document.getElementById('discordSocialLink');
+				if (discordLink) {
+					discordLink.href = savedDiscordLink;
+				}
+				console.log('✅ Discord link updated');
+			}
+			
+			// Apply saved page logo
+			if (savedPageLogo && savedPageLogo !== 'N/A') {
+				console.log('🖼️ Applying global page logo to ALL visitors:', savedPageLogo);
+				const logoElement = document.getElementById('pageLogoImg');
+				if (logoElement) {
+					logoElement.src = savedPageLogo;
+				}
+			}
+			
+			// Apply saved bio
+			if (savedBio && savedBio !== 'N/A') {
+				console.log('📝 Applying global bio to ALL visitors:', savedBio);
+				const bioElement = document.querySelector('.bio');
+				if (bioElement) {
+					bioElement.textContent = savedBio;
+				}
+			}
+			
+			// Apply saved about text
+			if (savedAboutText && savedAboutText !== 'N/A') {
+				console.log('📄 Applying global about text to ALL visitors:', savedAboutText);
+				const aboutElement = document.getElementById('aboutTextContent');
+				if (aboutElement) {
+					aboutElement.textContent = savedAboutText;
+				}
+			}
+			
+			// Apply saved streaming year
+			if (savedStreamingYear && savedStreamingYear !== 'N/A') {
+				console.log('📅 Applying global streaming year to ALL visitors:', savedStreamingYear);
+				const yearElement = document.getElementById('streamingYearStat');
+				if (yearElement) {
+					yearElement.textContent = `Streaming since ${savedStreamingYear}`;
+				}
+			}
+			
+			// Apply saved follower count
+			if (savedFollowerCount && savedFollowerCount !== 'N/A') {
+				console.log('👥 Applying global follower count to ALL visitors:', savedFollowerCount);
+				const followerElement = document.getElementById('twitchFollowersStat');
+				if (followerElement) {
+					followerElement.innerHTML = `
+						<img src="https://images.seeklogo.com/logo-png/27/2/twitch-logo-png_seeklogo-274042.png" alt="Twitch"/>
+						${formatNumber(parseInt(savedFollowerCount))} followers
+					`;
+				}
+			}
+			
+			// Apply saved subscriber count
+			if (savedSubscriberCount && savedSubscriberCount !== 'N/A') {
+				console.log('📺 Applying global subscriber count to ALL visitors:', savedSubscriberCount);
+				const subscriberElement = document.getElementById('youtubeSubscribersStat');
+				if (subscriberElement) {
+					subscriberElement.innerHTML = `
+						<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/09/YouTube_full-color_icon_%282017%29.svg/2560px-YouTube_full-color_icon_%282017%29.svg.png" alt="YouTube"/>
+						${formatNumber(parseInt(savedSubscriberCount))} subs
+					`;
+				}
+			}
+			
+			// Apply saved social links
+			if (savedTwitchLink && savedTwitchLink !== 'N/A') {
+				updateSocialLink('twitch', savedTwitchLink);
+			}
+			if (savedYouTubeLink && savedYouTubeLink !== 'N/A') {
+				updateSocialLink('youtube', savedYouTubeLink);
+			}
+			if (savedTikTokLink && savedTikTokLink !== 'N/A') {
+				updateSocialLink('tiktok', savedTikTokLink);
+			}
+			if (savedInstagramLink && savedInstagramLink !== 'N/A') {
+				updateSocialLink('instagram', savedInstagramLink);
+			}
+			if (savedXLink && savedXLink !== 'N/A') {
+				updateSocialLink('x', savedXLink);
+			}
+			if (savedRedditLink && savedRedditLink !== 'N/A') {
+				updateSocialLink('reddit', savedRedditLink);
+			}
+			
+			// Apply saved button text
+			if (savedFollowButtonText && savedFollowButtonText !== 'N/A') {
+				const followButton = document.getElementById('followButton');
+				if (followButton) {
+					followButton.innerHTML = `
+						<svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+							<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+							<circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+							<path d="m19 8 2 2-2 2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+							<path d="m21 10-7.5 0" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+						</svg>
+						${savedFollowButtonText}
+					`;
+				}
+			}
+			if (savedSubscribeButtonText && savedSubscribeButtonText !== 'N/A') {
+				const subscribeButton = document.getElementById('subscribeButton');
+				if (subscribeButton) {
+					subscribeButton.innerHTML = `
+						<svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+							<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+							<circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+							<path d="m19 8 2 2-2 2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+							<path d="m21 10-7.5 0" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+						</svg>
+						${savedSubscribeButtonText}
+					`;
+				}
+			}
+			
+			// Apply saved schedule times
+			if (savedSaturdayTime && savedSaturdayTime !== 'N/A') {
+				const saturdayElement = document.getElementById('saturdaySchedule');
+				if (saturdayElement) {
+					saturdayElement.textContent = `Saturday, ${savedSaturdayTime}`;
+				}
+			}
+			if (savedSundayTime && savedSundayTime !== 'N/A') {
+				const sundayElement = document.getElementById('sundaySchedule');
+				if (sundayElement) {
+					sundayElement.textContent = `Sunday, ${savedSundayTime}`;
+				}
 			}
 			
 			// Track loading state for simple coordination
@@ -1990,6 +2529,9 @@
 							loadingOverlay.classList.add('hide');
 							setTimeout(() => {
 								loadingOverlay.style.display = 'none';
+								// Show all database-dependent content
+								document.body.classList.remove('db-loading');
+								document.body.classList.add('db-loaded');
 							}, 600);
 						}
 					}, 300);
@@ -2063,6 +2605,9 @@
 				// Use auto-latest for ALL visitors
 				loadLatestYouTubeVideo();
 			}
+			
+			// Load and apply global website effects
+			loadGlobalEffects();
 		}
 
 		function updateYouTubeEmbed(videoId) {
@@ -2109,7 +2654,24 @@
 			const currentPic = await loadGlobalSetting('profile-pic') || 'N/A';
 			const currentBg = await loadGlobalSetting('background') || 'N/A';
 			const currentVideo = await loadGlobalSetting('youtube-video') || 'N/A';
+			const currentPageLogo = await loadGlobalSetting('pageLogo') || '';
+			const currentBio = await loadGlobalSetting('bioText') || '';
+			const currentAboutText = await loadGlobalSetting('aboutText') || '';
+			const currentStreamingYear = await loadGlobalSetting('streamingYear') || '';
+			const currentFollowerCount = await loadGlobalSetting('followerCount') || '';
+			const currentSubscriberCount = await loadGlobalSetting('subscriberCount') || '';
+			const currentTwitchLink = await loadGlobalSetting('twitchLink') || '';
+			const currentYouTubeLink = await loadGlobalSetting('youtubeLink') || '';
+			const currentTikTokLink = await loadGlobalSetting('tiktokLink') || '';
+			const currentInstagramLink = await loadGlobalSetting('instagramLink') || '';
+			const currentXLink = await loadGlobalSetting('xLink') || '';
+			const currentRedditLink = await loadGlobalSetting('redditLink') || '';
+			const currentFollowButtonText = await loadGlobalSetting('followButtonText') || '';
+			const currentSubscribeButtonText = await loadGlobalSetting('subscribeButtonText') || '';
+			const currentSaturdayTime = await loadGlobalSetting('saturdayTime') || '';
+			const currentSundayTime = await loadGlobalSetting('sundayTime') || '';
 			
+			// Display current settings
 			document.getElementById('currentDisplayName').textContent = currentDisplayName === 'N/A' ? 'N/A' : currentDisplayName;
 			document.getElementById('currentUsername').textContent = currentUsername === 'N/A' ? 'N/A' : currentUsername;
 			document.getElementById('currentTwitchStatus').textContent = currentTwitchStatus ? currentTwitchStatus.charAt(0).toUpperCase() + currentTwitchStatus.slice(1) : 'None';
@@ -2118,6 +2680,25 @@
 			document.getElementById('currentProfilePic').textContent = currentPic === 'N/A' ? 'N/A' : currentPic.substring(0, 50) + (currentPic.length > 50 ? '...' : '');
 			document.getElementById('currentBackground').textContent = currentBg === 'N/A' ? 'N/A' : currentBg.substring(0, 50) + (currentBg.length > 50 ? '...' : '');
 			document.getElementById('currentYouTubeVideo').textContent = currentVideo;
+			document.getElementById('currentPageLogo').textContent = currentPageLogo ? (currentPageLogo.length > 30 ? currentPageLogo.substring(0, 30) + '...' : currentPageLogo) : 'Default';
+			document.getElementById('currentBio').textContent = currentBio ? (currentBio.length > 30 ? currentBio.substring(0, 30) + '...' : currentBio) : 'N/A';
+			document.getElementById('currentAboutText').textContent = currentAboutText ? (currentAboutText.length > 30 ? currentAboutText.substring(0, 30) + '...' : currentAboutText) : 'N/A';
+			document.getElementById('currentStreamingYear').textContent = currentStreamingYear || 'N/A';
+			document.getElementById('currentFollowerCount').textContent = currentFollowerCount || 'API';
+			document.getElementById('currentSubscriberCount').textContent = currentSubscriberCount || 'API';
+			document.getElementById('currentTwitchLink').textContent = currentTwitchLink ? (currentTwitchLink.length > 30 ? currentTwitchLink.substring(0, 30) + '...' : currentTwitchLink) : 'N/A';
+			document.getElementById('currentYouTubeLink').textContent = currentYouTubeLink ? (currentYouTubeLink.length > 30 ? currentYouTubeLink.substring(0, 30) + '...' : currentYouTubeLink) : 'N/A';
+			document.getElementById('currentTikTokLink').textContent = currentTikTokLink ? (currentTikTokLink.length > 30 ? currentTikTokLink.substring(0, 30) + '...' : currentTikTokLink) : 'N/A';
+			document.getElementById('currentInstagramLink').textContent = currentInstagramLink ? (currentInstagramLink.length > 30 ? currentInstagramLink.substring(0, 30) + '...' : currentInstagramLink) : 'N/A';
+			document.getElementById('currentXLink').textContent = currentXLink ? (currentXLink.length > 30 ? currentXLink.substring(0, 30) + '...' : currentXLink) : 'N/A';
+			document.getElementById('currentRedditLink').textContent = currentRedditLink ? (currentRedditLink.length > 30 ? currentRedditLink.substring(0, 30) + '...' : currentRedditLink) : 'N/A';
+			document.getElementById('currentFollowButtonText').textContent = currentFollowButtonText || 'Follow';
+			document.getElementById('currentSubscribeButtonText').textContent = currentSubscribeButtonText || 'Subscribe';
+			document.getElementById('currentSaturdayTime').textContent = currentSaturdayTime || 'N/A';
+			document.getElementById('currentSundayTime').textContent = currentSundayTime || 'N/A';
+			
+			// Display current Firebase database URL
+			document.getElementById('currentFirebaseUrl').textContent = firebaseConfig.databaseURL;
 		}
 			
 		if (savedVideo && savedVideo !== 'N/A') {
@@ -2223,13 +2804,13 @@
 			// Save GLOBALLY for ALL users
 			await saveGlobalSetting('username', username);
 			
-			// Update ONLY specific username elements (not all elements!)
+			// Update all instances of username on the page
 			const usernameElements = document.querySelectorAll('.username, .handle, .user-handle');
 			usernameElements.forEach(element => {
 				element.textContent = username;
 			});
 			
-			// SAFE way to update specific content without breaking JavaScript
+			// SAFE way to update @ilyambrr in content only
 			// Only target visible content elements, exclude script/style/head
 			const contentElements = document.querySelectorAll('div.username, span.username, p.username, .bio, .title');
 			contentElements.forEach(element => {
@@ -2302,6 +2883,340 @@
 			alert(`Discord link updated GLOBALLY! All visitors will see this change.`);
 		}
 
+		async function updatePageLogo() {
+			const logoUrl = document.getElementById('pageLogoInput').value.trim();
+			if (!logoUrl) {
+				alert('Please enter a logo URL');
+				return;
+			}
+
+			// Save GLOBALLY for ALL users
+			await saveGlobalSetting('pageLogo', logoUrl);
+			
+			// Update logo immediately
+			const logoElement = document.getElementById('pageLogoImg');
+			if (logoElement) {
+				logoElement.src = logoUrl;
+			}
+			
+			// Update current settings display
+			const shortUrl = logoUrl.length > 30 ? logoUrl.substring(0, 30) + '...' : logoUrl;
+			document.getElementById('currentPageLogo').textContent = shortUrl;
+			document.getElementById('pageLogoInput').value = '';
+			
+			alert('Page logo updated GLOBALLY! All visitors will see this change.');
+		}
+
+		async function updateBio() {
+			const bio = document.getElementById('bioTextInput').value.trim();
+			if (!bio) {
+				alert('Please enter a bio');
+				return;
+			}
+
+			// Save GLOBALLY for ALL users
+			await saveGlobalSetting('bioText', bio);
+			
+			// Update bio immediately
+			const bioElement = document.querySelector('.bio');
+			if (bioElement) {
+				bioElement.textContent = bio;
+			}
+			
+			// Update current settings display
+			document.getElementById('currentBio').textContent = bio.length > 30 ? bio.substring(0, 30) + '...' : bio;
+			document.getElementById('bioTextInput').value = '';
+			
+			alert('Bio updated GLOBALLY! All visitors will see this change.');
+		}
+
+		async function updateAboutText() {
+			const aboutText = document.getElementById('aboutText').value.trim();
+			if (!aboutText) {
+				alert('Please enter about text');
+				return;
+			}
+
+			// Save GLOBALLY for ALL users
+			await saveGlobalSetting('aboutText', aboutText);
+			
+			// Update about text immediately
+			const aboutElement = document.getElementById('aboutTextContent');
+			if (aboutElement) {
+				aboutElement.textContent = aboutText;
+			}
+			
+			// Update current settings display
+			document.getElementById('currentAboutText').textContent = aboutText.length > 30 ? aboutText.substring(0, 30) + '...' : aboutText;
+			document.getElementById('aboutText').value = '';
+			
+			alert('About text updated GLOBALLY! All visitors will see this change.');
+		}
+
+		async function updateStreamingYear() {
+			const year = document.getElementById('streamingYear').value.trim();
+			if (!year) {
+				alert('Please enter a streaming year');
+				return;
+			}
+
+			// Save GLOBALLY for ALL users
+			await saveGlobalSetting('streamingYear', year);
+			
+			// Update streaming year immediately
+			const yearElement = document.getElementById('streamingYearStat');
+			if (yearElement) {
+				yearElement.textContent = `Streaming since ${year}`;
+			}
+			
+			// Update current settings display
+			document.getElementById('currentStreamingYear').textContent = year;
+			document.getElementById('streamingYear').value = '';
+			
+			alert('Streaming year updated GLOBALLY! All visitors will see this change.');
+		}
+
+		async function updateFollowerCount() {
+			const count = document.getElementById('followerCount').value.trim();
+			
+			// Save GLOBALLY for ALL users (empty string for API mode)
+			await saveGlobalSetting('followerCount', count);
+			
+			// Update followers immediately
+			const followerElement = document.getElementById('twitchFollowersStat');
+			if (followerElement) {
+				if (count) {
+					followerElement.innerHTML = `
+						<img src="https://images.seeklogo.com/logo-png/27/2/twitch-logo-png_seeklogo-274042.png" alt="Twitch"/>
+						${formatNumber(parseInt(count))} followers
+					`;
+				} else {
+					// Use API
+					updateTwitchFollowers();
+				}
+			}
+			
+			// Update current settings display
+			document.getElementById('currentFollowerCount').textContent = count || 'API';
+			document.getElementById('followerCount').value = '';
+			
+			alert(count ? 'Follower count updated GLOBALLY!' : 'Follower count set to use API GLOBALLY!');
+		}
+
+		async function updateSubscriberCount() {
+			const count = document.getElementById('subscriberCount').value.trim();
+			
+			// Save GLOBALLY for ALL users (empty string for API mode)
+			await saveGlobalSetting('subscriberCount', count);
+			
+			// Update subscribers immediately
+			const subscriberElement = document.getElementById('youtubeSubscribersStat');
+			if (subscriberElement) {
+				if (count) {
+					subscriberElement.innerHTML = `
+						<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/09/YouTube_full-color_icon_%282017%29.svg/2560px-YouTube_full-color_icon_%282017%29.svg.png" alt="YouTube"/>
+						${formatNumber(parseInt(count))} subs
+					`;
+				} else {
+					// Use API
+					updateYouTubeSubscribers();
+				}
+			}
+			
+			// Update current settings display
+			document.getElementById('currentSubscriberCount').textContent = count || 'API';
+			document.getElementById('subscriberCount').value = '';
+			
+			alert(count ? 'Subscriber count updated GLOBALLY!' : 'Subscriber count set to use API GLOBALLY!');
+		}
+
+		async function updateTwitchLink() {
+			const url = document.getElementById('twitchLink').value.trim();
+			if (!url) {
+				alert('Please enter a Twitch URL');
+				return;
+			}
+
+			await saveGlobalSetting('twitchLink', url);
+			updateSocialLink('twitch', url);
+			document.getElementById('twitchLink').value = '';
+			alert('Twitch link updated GLOBALLY!');
+		}
+
+		async function updateYouTubeLink() {
+			const url = document.getElementById('youtubeLink').value.trim();
+			if (!url) {
+				alert('Please enter a YouTube URL');
+				return;
+			}
+
+			await saveGlobalSetting('youtubeLink', url);
+			updateSocialLink('youtube', url);
+			document.getElementById('youtubeLink').value = '';
+			alert('YouTube link updated GLOBALLY!');
+		}
+
+		async function updateTikTokLink() {
+			const url = document.getElementById('tiktokLink').value.trim();
+			if (!url) {
+				alert('Please enter a TikTok URL');
+				return;
+			}
+
+			await saveGlobalSetting('tiktokLink', url);
+			updateSocialLink('tiktok', url);
+			document.getElementById('tiktokLink').value = '';
+			alert('TikTok link updated GLOBALLY!');
+		}
+
+		async function updateInstagramLink() {
+			const url = document.getElementById('instagramLink').value.trim();
+			if (!url) {
+				alert('Please enter an Instagram URL');
+				return;
+			}
+
+			await saveGlobalSetting('instagramLink', url);
+			updateSocialLink('instagram', url);
+			document.getElementById('instagramLink').value = '';
+			alert('Instagram link updated GLOBALLY!');
+		}
+
+		async function updateXLink() {
+			const url = document.getElementById('xLink').value.trim();
+			if (!url) {
+				alert('Please enter an X URL');
+				return;
+			}
+
+			await saveGlobalSetting('xLink', url);
+			updateSocialLink('x', url);
+			document.getElementById('xLink').value = '';
+			alert('X link updated GLOBALLY!');
+		}
+
+		async function updateRedditLink() {
+			const url = document.getElementById('redditLink').value.trim();
+			if (!url) {
+				alert('Please enter a Reddit URL');
+				return;
+			}
+
+			await saveGlobalSetting('redditLink', url);
+			updateSocialLink('reddit', url);
+			document.getElementById('redditLink').value = '';
+			alert('Reddit link updated GLOBALLY!');
+		}
+
+		function updateSocialLink(platform, url) {
+			// Update social bar links using specific IDs
+			const linkMap = {
+				'twitch': 'twitchSocialLink',
+				'youtube': 'youtubeSocialLink',
+				'tiktok': 'tiktokSocialLink',
+				'discord': 'discordSocialLink',
+				'instagram': 'instagramSocialLink',
+				'x': 'xSocialLink',
+				'reddit': 'redditSocialLink'
+			};
+			
+			const linkId = linkMap[platform.toLowerCase()];
+			if (linkId) {
+				const socialLink = document.getElementById(linkId);
+				if (socialLink) {
+					socialLink.href = url;
+				}
+			}
+		}
+
+		async function updateFollowButton() {
+			const text = document.getElementById('followButtonText').value.trim();
+			if (!text) {
+				alert('Please enter follow button text');
+				return;
+			}
+
+			await saveGlobalSetting('followButtonText', text);
+			
+			const followButton = document.getElementById('followButton');
+			if (followButton) {
+				followButton.innerHTML = `
+					<svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+						<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+						<circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+						<path d="m19 8 2 2-2 2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+						<path d="m21 10-7.5 0" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+					</svg>
+					${text}
+				`;
+			}
+			
+			document.getElementById('followButtonText').value = '';
+			alert('Follow button updated GLOBALLY!');
+		}
+
+		async function updateSubscribeButton() {
+			const text = document.getElementById('subscribeButtonText').value.trim();
+			if (!text) {
+				alert('Please enter subscribe button text');
+				return;
+			}
+
+			await saveGlobalSetting('subscribeButtonText', text);
+			
+			const subscribeButton = document.getElementById('subscribeButton');
+			if (subscribeButton) {
+				subscribeButton.innerHTML = `
+					<svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+						<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+						<circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+						<path d="m19 8 2 2-2 2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+						<path d="m21 10-7.5 0" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+					</svg>
+					${text}
+				`;
+			}
+			
+			document.getElementById('subscribeButtonText').value = '';
+			alert('Subscribe button updated GLOBALLY!');
+		}
+
+		async function updateSaturdayTime() {
+			const time = document.getElementById('saturdayTime').value.trim();
+			if (!time) {
+				alert('Please enter Saturday stream time');
+				return;
+			}
+
+			await saveGlobalSetting('saturdayTime', time);
+			
+			const saturdayElement = document.getElementById('saturdaySchedule');
+			if (saturdayElement) {
+				saturdayElement.textContent = `Saturday, ${time}`;
+			}
+			
+			document.getElementById('saturdayTime').value = '';
+			alert('Saturday schedule updated GLOBALLY!');
+		}
+
+		async function updateSundayTime() {
+			const time = document.getElementById('sundayTime').value.trim();
+			if (!time) {
+				alert('Please enter Sunday stream time');
+				return;
+			}
+
+			await saveGlobalSetting('sundayTime', time);
+			
+			const sundayElement = document.getElementById('sundaySchedule');
+			if (sundayElement) {
+				sundayElement.textContent = `Sunday, ${time}`;
+			}
+			
+			document.getElementById('sundayTime').value = '';
+			alert('Sunday schedule updated GLOBALLY!');
+		}
+
 		async function updateYouTubeVideo() {
 			const videoId = document.getElementById('youtubeVideoId').value.trim();
 			if (!videoId) {
@@ -2328,6 +3243,192 @@
 			alert('YouTube video updated GLOBALLY! All visitors will see this video.');
 		}
 
+		async function updateFirebaseDatabase() {
+			const newDatabaseUrl = document.getElementById('firebaseDatabaseUrl').value.trim();
+			
+			if (!newDatabaseUrl) {
+				alert('Please enter a Firebase database URL');
+				return;
+			}
+			
+			// Confirm the change
+			const confirmed = confirm(`⚠️ Are you sure you want to switch to a new Firebase database?\n\nNew URL: ${newDatabaseUrl}\n\nThis will:\n- Save the new database URL\n- Reload the page\n- Use the new Firebase project for all settings\n\nContinue?`);
+			
+			if (!confirmed) return;
+			
+			try {
+				// Store the new database URL encrypted in localStorage
+				const encryptedUrl = encryptUrl(newDatabaseUrl);
+				localStorage.setItem('encryptedFirebaseUrl', encryptedUrl);
+				
+				// Remove old unencrypted storage if it exists
+				localStorage.removeItem('customFirebaseUrl');
+				
+				alert('Firebase database URL updated and encrypted! The page will now reload with the new database.');
+				
+				// Reload the page to initialize with new database
+				window.location.reload();
+				
+			} catch (error) {
+				console.error('Error updating Firebase database:', error);
+				alert('Error updating Firebase database. Please try again.');
+			}
+		}
+
+		// Website Effects Functions
+		function toggleColorEffect() {
+			const isChecked = document.getElementById('colorEffectToggle').checked;
+			if (isChecked) {
+				document.body.classList.add('effect-color');
+			} else {
+				document.body.classList.remove('effect-color');
+			}
+			updateCombinedFilters();
+		}
+
+		function toggleGrayscale() {
+			const isChecked = document.getElementById('grayscaleToggle').checked;
+			if (isChecked) {
+				document.body.classList.add('effect-grayscale');
+			} else {
+				document.body.classList.remove('effect-grayscale');
+			}
+			updateCombinedFilters();
+		}
+
+		function toggleBlur() {
+			const isChecked = document.getElementById('blurToggle').checked;
+			if (isChecked) {
+				document.body.classList.add('effect-blur-bg');
+			} else {
+				document.body.classList.remove('effect-blur-bg');
+			}
+		}
+
+		function toggleSepia() {
+			const isChecked = document.getElementById('sepiaToggle').checked;
+			if (isChecked) {
+				document.body.classList.add('effect-sepia');
+			} else {
+				document.body.classList.remove('effect-sepia');
+			}
+			updateCombinedFilters();
+		}
+
+		function toggleInvert() {
+			const isChecked = document.getElementById('invertToggle').checked;
+			if (isChecked) {
+				document.body.classList.add('effect-invert');
+			} else {
+				document.body.classList.remove('effect-invert');
+			}
+			updateCombinedFilters();
+		}
+
+		function toggleBrightness() {
+			const isChecked = document.getElementById('brightnessToggle').checked;
+			if (isChecked) {
+				document.body.classList.add('effect-brightness');
+			} else {
+				document.body.classList.remove('effect-brightness');
+			}
+			updateCombinedFilters();
+		}
+
+		function updateCombinedFilters() {
+			// Build combined filter string for complex combinations
+			const effects = [];
+			
+			if (document.body.classList.contains('effect-invert')) {
+				effects.push('invert(1)');
+			}
+			if (document.body.classList.contains('effect-color')) {
+				effects.push('hue-rotate(45deg)');
+				effects.push('saturate(1.5)');
+			}
+			if (document.body.classList.contains('effect-grayscale')) {
+				effects.push('grayscale(100%)');
+			}
+			if (document.body.classList.contains('effect-sepia')) {
+				effects.push('sepia(70%)');
+			}
+			if (document.body.classList.contains('effect-brightness')) {
+				effects.push('brightness(1.3)');
+			}
+
+			// Apply combined filter if we have multiple effects
+			if (effects.length > 1) {
+				document.body.style.filter = effects.join(' ');
+			} else if (effects.length === 1) {
+				document.body.style.filter = effects[0];
+			} else {
+				document.body.style.filter = '';
+			}
+		}
+
+		function resetAllEffects() {
+			// Reset all checkboxes
+			document.getElementById('colorEffectToggle').checked = false;
+			document.getElementById('grayscaleToggle').checked = false;
+			document.getElementById('blurToggle').checked = false;
+			document.getElementById('sepiaToggle').checked = false;
+			document.getElementById('invertToggle').checked = false;
+			document.getElementById('brightnessToggle').checked = false;
+			
+			// Remove all effect classes
+			document.body.classList.remove('effect-color', 'effect-grayscale', 'effect-blur-bg', 'effect-sepia', 'effect-invert', 'effect-brightness');
+			document.body.style.filter = '';
+			
+			alert('All visual effects have been reset!');
+		}
+
+		async function saveEffectsGlobally() {
+			const effects = {
+				color: document.getElementById('colorEffectToggle').checked,
+				grayscale: document.getElementById('grayscaleToggle').checked,
+				blur: document.getElementById('blurToggle').checked,
+				sepia: document.getElementById('sepiaToggle').checked,
+				invert: document.getElementById('invertToggle').checked,
+				brightness: document.getElementById('brightnessToggle').checked
+			};
+
+			// Save GLOBALLY for ALL users
+			await saveGlobalSetting('websiteEffects', JSON.stringify(effects));
+			
+			alert('Website effects saved GLOBALLY! All visitors will see these effects.');
+		}
+
+		async function loadGlobalEffects() {
+			const savedEffects = await loadGlobalSetting('websiteEffects');
+			if (savedEffects && savedEffects !== 'N/A') {
+				try {
+					const effects = JSON.parse(savedEffects);
+					
+					// Apply saved effects
+					document.getElementById('colorEffectToggle').checked = effects.color || false;
+					document.getElementById('grayscaleToggle').checked = effects.grayscale || false;
+					document.getElementById('blurToggle').checked = effects.blur || false;
+					document.getElementById('sepiaToggle').checked = effects.sepia || false;
+					document.getElementById('invertToggle').checked = effects.invert || false;
+					document.getElementById('brightnessToggle').checked = effects.brightness || false;
+					
+					// Apply the effects to the page
+					if (effects.color) document.body.classList.add('effect-color');
+					if (effects.grayscale) document.body.classList.add('effect-grayscale');
+					if (effects.blur) document.body.classList.add('effect-blur-bg');
+					if (effects.sepia) document.body.classList.add('effect-sepia');
+					if (effects.invert) document.body.classList.add('effect-invert');
+					if (effects.brightness) document.body.classList.add('effect-brightness');
+					
+					updateCombinedFilters();
+					
+					console.log('🎨 Applied global website effects:', effects);
+				} catch (e) {
+					console.error('Error parsing saved effects:', e);
+				}
+			}
+		}
+
 		// Add reset functions
 		async function resetToDefaults() {
 			if (confirm('Are you sure you want to reset all settings to defaults GLOBALLY? This will affect ALL visitors and cannot be undone.')) {
@@ -2352,7 +3453,7 @@
 					element.textContent = '@ilyambrr';
 				});
 				
-				// SAFE way to reset username without breaking JavaScript
+				// SAFE reset of usernames in content only
 				// Only target visible content elements, exclude script/style/head
 				const contentElements = document.querySelectorAll('div.username, span.username, p.username, .bio, .title');
 				contentElements.forEach(element => {
