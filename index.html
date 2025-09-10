@@ -355,6 +355,9 @@
 			z-index: 1000;
 		}
 
+		/* Ensure Colors Editor sits above Admin Panel */
+		#colorsPopup { z-index: 1101; }
+
 		.popup-content {
 			background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03)), var(--card);
 			border: 1px solid var(--border);
@@ -1552,7 +1555,8 @@
 				<h3>Admin Panel</h3>
 				<div class="admin-user-info">
 					<span id="adminUserName">Welcome, Admin</span>
-					<div style="margin-bottom:10px; display:flex; gap:10px; align-items:center;">
+					<div style="margin-bottom:10px; display:flex; gap:10px; align-items:center; flex-wrap: wrap;">
+						<button class="admin-logout-btn" onclick="signOut()">Logout</button>
 						<button onclick="openColorsPopup()" style="background: linear-gradient(90deg, #6a11cb, #2575fc);">Edit Colors</button>
 						<small>Edit global CSS theme variables</small>
 					</div>
