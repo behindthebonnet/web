@@ -130,6 +130,8 @@
 			border-radius:6px;
 			filter:invert(1);
 		}
+		/* Allow disabling inversion via body class */
+		.logo-no-invert .page-logo img{ filter:none !important; }
 		.social-bar{
 			position:fixed;
 			top:57px;
@@ -1587,10 +1589,20 @@
 				<div class="admin-section">
 					<h4>Page Logo Settings</h4>
 					<div class="admin-setting">
-						<label for="pageLogo">Page Logo URL:</label>
-						<input type="url" id="pageLogo" placeholder="https://example.com/logo.svg">
+						<label for="pageLogo">Page Logo:</label>
+						<div style="display:flex; gap:10px; align-items:center;">
+							<input type="url" id="pageLogo" placeholder="https://example.com/logo.svg" style="flex:2;">
+							<input type="text" id="pageLogoResolution" placeholder="1920x1080" style="flex:1;" title="Enter source resolution (e.g., 1920x1080)">
+						</div>
 						<button onclick="updatePageLogo()">Update</button>
-						<small>Logo that appears in the top-left corner</small>
+						<small>URL and optional source resolution; the logo is scaled consistently to fit the box.</small>
+					</div>
+					<div class="admin-setting">
+						<label style="display:flex; align-items:center; gap:8px;">
+							<input type="checkbox" id="logoInvertToggle" checked onchange="updateLogoInvert()">
+							<span>Invert Logo (white on dark background)</span>
+						</label>
+						<small>Uncheck if your logo is already dark or you want the original colors</small>
 					</div>
 				</div>
 				
@@ -2361,6 +2373,7 @@
 			const savedBg = await loadGlobalSetting('background');
 			const savedVideo = await loadGlobalSetting('youtube-video');
 			const savedPageLogo = await loadGlobalSetting('pageLogo');
+			const savedLogoInvert = await loadGlobalSetting('logoInvert');
 			const savedBio = await loadGlobalSetting('bioText');
 			const savedAboutText = await loadGlobalSetting('aboutText');
 			const savedStreamingYear = await loadGlobalSetting('streamingYear');
@@ -2446,6 +2459,17 @@
 				const logoElement = document.getElementById('pageLogoImg');
 				if (logoElement) {
 					logoElement.src = savedPageLogo;
+				}
+			}
+			// Apply saved logo inversion state (default true)
+			{
+				const useInvert = (savedLogoInvert === null || savedLogoInvert === undefined) ? true : !!savedLogoInvert;
+				const toggle = document.getElementById('logoInvertToggle');
+				if (toggle) toggle.checked = useInvert;
+				if (useInvert) {
+					document.body.classList.remove('logo-no-invert');
+				} else {
+					document.body.classList.add('logo-no-invert');
 				}
 			}
 			
@@ -2733,6 +2757,8 @@
 			const currentBg = await loadGlobalSetting('background') || 'N/A';
 			const currentVideo = await loadGlobalSetting('youtube-video') || 'N/A';
 			const currentPageLogo = await loadGlobalSetting('pageLogo') || '';
+			const currentPageLogoResolution = await loadGlobalSetting('pageLogoResolution') || '';
+			const currentLogoInvert = await loadGlobalSetting('logoInvert');
 			const currentBio = await loadGlobalSetting('bioText') || '';
 			const currentAboutText = await loadGlobalSetting('aboutText') || '';
 			const currentStreamingYear = await loadGlobalSetting('streamingYear') || '';
@@ -2768,6 +2794,10 @@
 			document.getElementById('currentBackground').textContent = currentBg === 'N/A' ? 'N/A' : currentBg.substring(0, 50) + (currentBg.length > 50 ? '...' : '');
 			document.getElementById('currentYouTubeVideo').textContent = currentVideo;
 			document.getElementById('currentPageLogo').textContent = currentPageLogo ? (currentPageLogo.length > 30 ? currentPageLogo.substring(0, 30) + '...' : currentPageLogo) : 'Default';
+			const resInput = document.getElementById('pageLogoResolution');
+			if (resInput) resInput.value = currentPageLogoResolution;
+			const invToggle = document.getElementById('logoInvertToggle');
+			if (invToggle) invToggle.checked = (currentLogoInvert === null || currentLogoInvert === undefined) ? true : !!currentLogoInvert;
 			document.getElementById('currentBio').textContent = currentBio ? (currentBio.length > 30 ? currentBio.substring(0, 30) + '...' : currentBio) : 'N/A';
 			document.getElementById('currentAboutText').textContent = currentAboutText ? (currentAboutText.length > 30 ? currentAboutText.substring(0, 30) + '...' : currentAboutText) : 'N/A';
 			document.getElementById('currentStreamingYear').textContent = currentStreamingYear || 'N/A';
@@ -3005,13 +3035,23 @@
 
 		async function updatePageLogo() {
 			const logoUrl = document.getElementById('pageLogo').value.trim();
+			const resolution = (document.getElementById('pageLogoResolution').value || '').trim();
 			if (!logoUrl) {
 				alert('Please enter a logo URL');
 				return;
 			}
 
+			// Optional: basic validation of resolution (WxH)
+			if (resolution && !/^\d{2,5}x\d{2,5}$/i.test(resolution)) {
+				alert('Resolution must be in the format 1920x1080');
+				return;
+			}
+
 			// Save GLOBALLY for ALL users
 			await saveGlobalSetting('pageLogo', logoUrl);
+			if (resolution) {
+				await saveGlobalSetting('pageLogoResolution', resolution);
+			}
 			
 			// Update logo immediately
 			const logoElement = document.getElementById('pageLogoImg');
@@ -3023,8 +3063,20 @@
 			const shortUrl = logoUrl.length > 30 ? logoUrl.substring(0, 30) + '...' : logoUrl;
 			document.getElementById('currentPageLogo').textContent = shortUrl;
 			document.getElementById('pageLogo').value = '';
+			document.getElementById('pageLogoResolution').value = '';
 			
 			alert('Page logo updated GLOBALLY! All visitors will see this change.');
+		}
+
+		async function updateLogoInvert() {
+			const checked = document.getElementById('logoInvertToggle').checked;
+			await saveGlobalSetting('logoInvert', checked);
+			if (checked) {
+				document.body.classList.remove('logo-no-invert');
+			} else {
+				document.body.classList.add('logo-no-invert');
+			}
+			console.log('Logo invert set to:', checked);
 		}
 
 		async function updateBio() {
