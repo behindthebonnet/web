@@ -1021,13 +1021,13 @@
 				</div>
 			</div>
 			<div class="actions">
-				<a class="button" id="followButton" href="javascript:void(0)" onclick="openPopup('followPopup')">
+				<a class="button" id="followButton" href="javascript:void(0)" onclick="openFollowPopup()">
 					<svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
 						<path d="M12 21s-8-4.5-8-11a5 5 0 0 1 9-3 5 5 0 0 1 9 3c0 6.5-10 11-10 11z" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
 					</svg>
 					Follow
 				</a>
-				<a class="button secondary" id="subscribeButton" href="javascript:void(0)" onclick="openPopup('subscribePopup')">
+				<a class="button secondary" id="subscribeButton" href="javascript:void(0)" onclick="openSubscribePopup()">
 					<svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
 						<path d="M4 12h16M12 4v16" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
 					</svg>
@@ -1476,29 +1476,12 @@
 	<div id="followPopup" class="popup-overlay">
 		<div class="popup-content">
 			<div class="popup-header">
-				<h3>Follow ilyambr</h3>
+				<h3 id="followPopupTitle">Follow ilyambr</h3>
 				<button class="close-btn" onclick="closePopup('followPopup')">&times;</button>
 			</div>
 			<div class="popup-body">
 				<p>Choose where you'd like to follow:</p>
-				<div class="popup-buttons">
-					<a href="https://twitch.tv/ilyambrr" target="_blank" class="popup-button twitch">
-						<img src="https://images.seeklogo.com/logo-png/27/2/twitch-logo-png_seeklogo-274042.png" alt="Twitch"/>
-						Follow on Twitch
-					</a>
-					<a href="https://www.youtube.com/@ilyambr?sub_confirmation=1" target="_blank" class="popup-button youtube">
-						<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/09/YouTube_full-color_icon_%282017%29.svg/2560px-YouTube_full-color_icon_%282017%29.svg.png" alt="YouTube"/>
-						Subscribe to YouTube
-					</a>
-					<a href="https://www.tiktok.com/@ilyambr_" target="_blank" class="popup-button tiktok">
-						<img src="https://logos-world.net/wp-content/uploads/2020/04/TikTok-Logo-2016-present.png" alt="TikTok"/>
-						Follow on TikTok
-					</a>
-					<a href="https://guns.lol/ilyambr" target="_blank" class="popup-button guns">
-						<img src="https://img.icons8.com/?size=100&id=7867&format=png&color=FFFFFF" alt="More Links"/>
-						More Links
-					</a>
-				</div>
+				<div class="popup-buttons" id="followPopupButtons"></div>
 			</div>
 		</div>
 	</div>
@@ -1507,21 +1490,12 @@
 	<div id="subscribePopup" class="popup-overlay">
 		<div class="popup-content">
 			<div class="popup-header">
-				<h3>Subscribe to ilyambr</h3>
+				<h3 id="subscribePopupTitle">Subscribe to ilyambr</h3>
 				<button class="close-btn" onclick="closePopup('subscribePopup')">&times;</button>
 			</div>
 			<div class="popup-body">
 				<p>Choose where you'd like to subscribe:</p>
-				<div class="popup-buttons">
-					<a href="https://subs.twitch.tv/ilyambrr" target="_blank" class="popup-button twitch">
-						<img src="https://images.seeklogo.com/logo-png/27/2/twitch-logo-png_seeklogo-274042.png" alt="Twitch"/>
-						Subscribe on Twitch
-					</a>
-					<a href="https://ko-fi.com/ilyambr" target="_blank" class="popup-button kofi">
-						<img src="https://storage.ko-fi.com/cdn/nav-logo-stroke.png" alt="Ko-fi"/>
-						Support on Ko-fi
-					</a>
-				</div>
+				<div class="popup-buttons" id="subscribePopupButtons"></div>
 			</div>
 		</div>
 	</div>
@@ -1917,6 +1891,60 @@
 					</div>
 				</div>
 			</div>
+
+			<!-- Follow popup links management -->
+			<div class="admin-section">
+				<h4>Follow Popup Links</h4>
+				<div class="admin-setting">
+					<div style="display:flex; gap:10px; align-items:center;">
+						<input type="text" id="followAddHelper" placeholder="Use Add to choose logo, name, and link" disabled style="flex:1; opacity:.7;">
+						<button onclick="openAddActionLinkPopup('follow')">Add</button>
+					</div>
+					<div id="followLinksList" style="margin-top:8px;"></div>
+					<small>Manage the links shown in the Follow popup.</small>
+				</div>
+			</div>
+
+			<!-- Subscribe popup links management -->
+			<div class="admin-section">
+				<h4>Subscribe Popup Links</h4>
+				<div class="admin-setting">
+					<div style="display:flex; gap:10px; align-items:center;">
+						<input type="text" id="subscribeAddHelper" placeholder="Use Add to choose logo, name, and link" disabled style="flex:1; opacity:.7;">
+						<button onclick="openAddActionLinkPopup('subscribe')">Add</button>
+					</div>
+					<div id="subscribeLinksList" style="margin-top:8px;"></div>
+					<small>Manage the links shown in the Subscribe popup.</small>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- Add Action Link Popup -->
+	<div id="actionLinkPopup" class="popup-overlay">
+		<div class="popup-content">
+			<div class="popup-header">
+				<h3 id="actionLinkPopupTitle">Add Link</h3>
+				<button class="close-btn" onclick="closePopup('actionLinkPopup')">&times;</button>
+			</div>
+			<div class="popup-body">
+				<div class="admin-setting" style="gap:12px;">
+					<label>Logo image:</label>
+					<input type="file" id="actionLogoFile" accept="image/*" onchange="handleActionLogoFile(this)">
+					<div id="actionLogoPreviewWrap" style="display:none; align-items:center; gap:10px;">
+						<img id="actionLogoPreview" alt="Logo preview" style="width:40px; height:40px; object-fit:contain; background:rgba(255,255,255,0.06); border:1px solid var(--border); border-radius:8px;" />
+						<small>Preview</small>
+					</div>
+					<label for="actionLinkName">Name:</label>
+					<input type="text" id="actionLinkName" placeholder="Follow on Twitch" maxlength="40">
+					<label for="actionLinkUrl">Link URL:</label>
+					<input type="url" id="actionLinkUrl" placeholder="https://example.com/your-link">
+					<div style="display:flex; gap:10px; margin-top:10px;">
+						<button onclick="saveActionLinkFromPopup()">Save</button>
+						<button style="background:rgba(255,255,255,0.08)" onclick="closePopup('actionLinkPopup')">Cancel</button>
+					</div>
+				</div>
+			</div>
 		</div>
 	</div>
 
@@ -1948,6 +1976,7 @@
 			if (event.key === 'Escape') {
 				closePopup('followPopup');
 				closePopup('subscribePopup');
+				closePopup('actionLinkPopup');
 			}
 		});
 	</script>
@@ -2418,6 +2447,121 @@
 		}
 
 		// Admin Panel Functions
+		// ---- Action Links (Follow/Subscribe) ----
+		let actionLinkContext = 'follow'; // current context for add/edit
+		let followLinks = []; // {name, url, img}
+		let subscribeLinks = [];
+
+		function openAddActionLinkPopup(context) {
+			actionLinkContext = context;
+			document.getElementById('actionLinkPopupTitle').textContent = context === 'follow' ? 'Add Follow Link' : 'Add Subscribe Link';
+			document.getElementById('actionLogoFile').value = '';
+			document.getElementById('actionLogoPreviewWrap').style.display = 'none';
+			document.getElementById('actionLinkName').value = '';
+			document.getElementById('actionLinkUrl').value = '';
+			openPopup('actionLinkPopup');
+		}
+
+		function handleActionLogoFile(input) {
+			const file = input.files && input.files[0];
+			if (!file) return;
+			const reader = new FileReader();
+			reader.onload = () => {
+				document.getElementById('actionLogoPreview').src = reader.result;
+				document.getElementById('actionLogoPreviewWrap').style.display = 'flex';
+			};
+			reader.readAsDataURL(file); // store as data URL
+		}
+
+		async function saveActionLinkFromPopup() {
+			const name = (document.getElementById('actionLinkName').value || '').trim();
+			const url = (document.getElementById('actionLinkUrl').value || '').trim();
+			const img = document.getElementById('actionLogoPreview').src || '';
+			if (!name || !url || !img) { alert('Please provide logo, name, and URL'); return; }
+			const entry = { name, url, img };
+			if (actionLinkContext === 'follow') {
+				followLinks.push(entry);
+				await saveGlobalSetting('followLinks', JSON.stringify(followLinks));
+				renderActionLinksList('follow');
+			} else {
+				subscribeLinks.push(entry);
+				await saveGlobalSetting('subscribeLinks', JSON.stringify(subscribeLinks));
+				renderActionLinksList('subscribe');
+			}
+			closePopup('actionLinkPopup');
+		}
+
+		function renderActionLinksList(context) {
+			const data = context === 'follow' ? followLinks : subscribeLinks;
+			const container = document.getElementById(context === 'follow' ? 'followLinksList' : 'subscribeLinksList');
+			if (!container) return;
+			container.innerHTML = '';
+			data.forEach((item, idx) => {
+				const div = document.createElement('div');
+				div.className = 'collab-item';
+				div.innerHTML = `
+					<div style="display:flex; align-items:center; gap:10px;">
+						<img src="${item.img}" alt="logo" style="width:20px; height:20px; object-fit:contain; border-radius:4px; background:rgba(255,255,255,0.08)"/>
+						<span class="collab-email">${item.name} — ${item.url}</span>
+					</div>
+				`;
+				const btn = document.createElement('button');
+				btn.className = 'collab-remove';
+				btn.textContent = 'Remove';
+				btn.onclick = async () => {
+					if (context === 'follow') {
+						followLinks.splice(idx, 1);
+						await saveGlobalSetting('followLinks', JSON.stringify(followLinks));
+						renderActionLinksList('follow');
+					} else {
+						subscribeLinks.splice(idx, 1);
+						await saveGlobalSetting('subscribeLinks', JSON.stringify(subscribeLinks));
+						renderActionLinksList('subscribe');
+					}
+				};
+				div.appendChild(btn);
+				container.appendChild(div);
+			});
+		}
+
+		function setPopupTitles(displayName) {
+			const name = displayName && displayName !== 'N/A' ? displayName : 'ilyambr';
+			const fTitle = document.getElementById('followPopupTitle');
+			if (fTitle) fTitle.textContent = `Follow ${name}`;
+			const sTitle = document.getElementById('subscribePopupTitle');
+			if (sTitle) sTitle.textContent = `Subscribe to ${name}`;
+		}
+
+		function renderActionPopupButtons(context) {
+			const data = context === 'follow' ? followLinks : subscribeLinks;
+			const container = document.getElementById(context === 'follow' ? 'followPopupButtons' : 'subscribePopupButtons');
+			if (!container) return;
+			container.innerHTML = '';
+			data.forEach(item => {
+				const a = document.createElement('a');
+				a.href = item.url;
+				a.target = '_blank';
+				a.rel = 'noopener';
+				a.className = 'popup-button';
+				// logo
+				const img = document.createElement('img');
+				img.src = item.img;
+				img.alt = 'Logo';
+				a.appendChild(img);
+				// text node
+				a.appendChild(document.createTextNode(item.name));
+				container.appendChild(a);
+			});
+		}
+
+		async function openFollowPopup() {
+			renderActionPopupButtons('follow');
+			openPopup('followPopup');
+		}
+		async function openSubscribePopup() {
+			renderActionPopupButtons('subscribe');
+			openPopup('subscribePopup');
+		}
 		function loadCurrentSettings() {
 			document.getElementById('adminUserName').textContent = `Welcome, ${adminUser.name}`;
 			
@@ -2436,6 +2580,22 @@
 			// Apply saved GLOBAL settings on page load - visible to ALL users
 			const savedDisplayName = await loadGlobalSetting('display-name');
 			const savedUsername = await loadGlobalSetting('username');
+			// Load follow/subscribe links
+			try {
+				const f = await loadGlobalSetting('followLinks');
+				if (f && f !== 'N/A') followLinks = JSON.parse(f);
+			} catch(e) { followLinks = []; }
+			try {
+				const s = await loadGlobalSetting('subscribeLinks');
+				if (s && s !== 'N/A') subscribeLinks = JSON.parse(s);
+			} catch(e) { subscribeLinks = []; }
+			renderActionLinksList('follow');
+			renderActionLinksList('subscribe');
+			renderActionPopupButtons('follow');
+			renderActionPopupButtons('subscribe');
+
+			// Update popup titles with current display name
+			setPopupTitles(savedDisplayName);
 			const savedTwitchStatus = await loadGlobalSetting('twitchStatus');
 			const savedDiscordLink = await loadGlobalSetting('discordLink');
 			const savedPic = await loadGlobalSetting('profile-pic');
