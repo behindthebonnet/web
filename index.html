@@ -3944,8 +3944,8 @@
 						const formattedSubs = formatNumber(subscribers);
 						// Update the subscribers display
 						const subsElement = document.querySelector('.stat img[alt="YouTube"]').parentElement;
-						subsElement.innerHTML = `
-							<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/09/YouTube_full-color_icon_%282017%29.svg/2560px-YouTube_full-color_icon_%282017%29.svg.png" alt="YouTube" style="filter: invert(100%);"/>
+						subsElement.innerHTML = 
+							<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/09/YouTube_full-color_icon_%282017%29.svg/2560px-YouTube_full-color_icon_%282017%29.svg.png" alt="YouTube" style="filter: grayscale(100%) invert(100%);" />
 							${formattedSubs} subs
 						`;
 					}
