@@ -3,8 +3,8 @@
 <head>
 	<meta charset="UTF-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1" />
-	<title>ilyambr</title>
-	<link rel="icon" type="image/x-icon" href="https://ilyambr.me/favicon.ico">
+	<title>behindthebonnet</title>
+	<link rel="icon" type="image/x-icon" href="https://behindthebonnet.me/favicon.ico">
 	<link rel="preconnect" href="https://fonts.googleapis.com">
 	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 	<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Space+Grotesk:wght@400;600&display=swap" rel="stylesheet">
@@ -3504,7 +3504,7 @@
 						&nbsp;
 					</div>
 					<div class="stat" id="youtubeSubscribersStat">
-						<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/09/YouTube_full-color_icon_%282017%29.svg/2560px-YouTube_full-color_icon_%282017%29.svg.png" alt="YouTube" style="filter: invert(100%);"/>
+						<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/09/YouTube_full-color_icon_%282017%29.svg/2560px-YouTube_full-color_icon_%282017%29.svg.png" alt="YouTube" style="filter: greyscale(100%);"/>
 						&nbsp;
 					</div>
 					<div class="stat" id="streamingYearStat">&nbsp;</div>
@@ -3944,8 +3944,8 @@
 						const formattedSubs = formatNumber(subscribers);
 						// Update the subscribers display
 						const subsElement = document.querySelector('.stat img[alt="YouTube"]').parentElement;
-						subsElement.innerHTML = 
-							<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/09/YouTube_full-color_icon_%282017%29.svg/2560px-YouTube_full-color_icon_%282017%29.svg.png" alt="YouTube" style="filter: grayscale(100%) invert(100%);" />
+						subsElement.innerHTML = `
+							<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/09/YouTube_full-color_icon_%282017%29.svg/2560px-YouTube_full-color_icon_%282017%29.svg.png" alt="YouTube" style="filter: invert(100%);"/>
 							${formattedSubs} subs
 						`;
 					}
